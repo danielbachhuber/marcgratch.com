@@ -1,0 +1,145 @@
+// header
+.ast-header {
+    position: relative;
+    text-align:center;
+    .x-rem(padding-top,2);
+    .x-rem(padding-bottom,2);
+    .x-rem(margin-bottom,@line-height-base);
+
+    // header logo
+    .ast-header-image {
+        position: absolute;
+        left:0;
+        top:0;
+        width:100%;
+        height:100%;
+        z-index: -1;
+    }
+
+    .ast-header--inner {
+        .ast-width();
+    }
+}
+
+// menu toggle button
+.ast-menu-toggle {
+    display: inline-block;
+    margin-bottom:15px;
+    text-align:center;
+    line-height:@grid-gutter-width;
+
+    span, i {
+        color:@text-color;
+        display: inline-block;
+        vertical-align: top;
+        line-height: @grid-gutter-width;
+    }
+
+    span {
+        font-size:@font-size-xsmall - 0.2;
+        font-family: @font-family-sans-serif;
+        text-transform: uppercase;
+        height:@grid-gutter-width;
+        line-height:@grid-gutter-width + 12;
+    }
+
+    i {
+        height:auto;
+        width:auto;
+        line-height: 38px;
+    }
+    &:hover,
+    &:active,
+    &:focus {
+        outline:0;
+        text-decoration: none;
+    }
+}
+
+// logo wrap
+.ast-brand-wrap {
+    overflow: hidden;
+    position: relative;
+    h1,h2 {
+        font-family: @font-family-sans-serif;
+    }
+
+    h1 {
+        .x-rem(font-size,2.5);
+        margin-bottom: 0;
+        font-weight:bold;
+        a {
+            color:@text-color;
+        }
+    }
+
+    h2 {
+        .x-rem(font-size,2);
+        .x-rem(line-height,2);
+        margin-bottom: 0;
+    }
+
+    .ast-site-logo {
+        float:left;
+    }
+
+}
+
+// main site wrapper
+.ast-site-wrapper {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+}
+
+// site content wrapper
+.ast-site-main {
+    .transition(.2s ease);
+}
+
+.logged-in {
+    margin-top:-32px;
+}
+
+// off canvas menu wrap
+.ast-menu-wrap {
+    position: fixed;
+    left:0;
+    right:0;
+    width:100%;
+    top:-@menu-width;
+    height:@menu-width;
+    padding:@grid-gutter-width;
+    background:black;
+    .transition(.2s ease);
+
+    .ast-menu-toggle i,
+    .ast-menu-toggle span{
+        color:white;
+    }
+
+}
+// inner ul menu
+.ast-menu {
+
+    a {
+        line-height:3;
+        color:white;
+    }
+}
+
+// menu open state
+.ast-menu-open {
+
+    .ast-site-main {
+         -webkit-transform: translateY(@menu-width);
+             -moz-transform: translateY(@menu-width);
+              -ms-transform: translateY(@menu-width);
+               -o-transform: translateY(@menu-width);
+                  transform: translateY(@menu-width);
+    }
+
+    .ast-menu-wrap {
+        top:0;
+    }
+}

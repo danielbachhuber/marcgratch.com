@@ -1,0 +1,47 @@
+*,
+*:before,
+*:after {
+  .box-sizing(border-box);
+}
+
+html {
+    font-size:62.5%;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+
+body {
+    font-family: @font-family-base;
+    color: @text-color;
+    background-color: @body-bg;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    .x-rem(font-size, @font-size-base);
+    .x-rem(line-height,@line-height-base);
+
+    // wordpress custom backgrounds
+    &.custom-background {
+        background-size:cover;
+    }
+}
+
+// images
+img {
+    .img-responsive();
+}
+
+// links
+a {
+    color: @link-color;
+    text-decoration: none;
+    .hyphens();
+
+    &:hover,
+    &:focus {
+        color: @link-hover-color;
+        text-decoration: underline;
+    }
+
+    &:focus {
+        .tab-focus();
+    }
+}
