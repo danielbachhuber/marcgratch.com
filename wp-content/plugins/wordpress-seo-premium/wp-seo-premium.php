@@ -4,9 +4,9 @@
  */
 
 /**
- * Plugin Name: WordPress SEO Premium
- * Version: 2.1.1
- * Plugin URI: http://yoast.com/wordpress/seo-premium/#utm_source=wpadmin&utm_medium=plugin&utm_campaign=wpseoplugin
+ * Plugin Name: Yoast SEO Premium
+ * Version: 2.3.5
+ * Plugin URI: https://yoast.com/wordpress/plugins/seo/#utm_source=wpadmin&utm_medium=plugin&utm_campaign=wpseoplugin
  * Description: The first true all-in-one SEO solution for WordPress, including on-page content analysis, XML sitemaps and much more.
  * Author: Team Yoast
  * Author URI: https://yoast.com/
@@ -16,7 +16,7 @@
  */
 
 /**
- * WordPress SEO Plugin
+ * Yoast SEO Plugin
  * Copyright (C) 2008-2014, Yoast BV - support@yoast.com
  *
  * This program is free software: you can redistribute it and/or modify
@@ -37,10 +37,18 @@ if ( ! defined( 'WPSEO_FILE' ) ) {
 	define( 'WPSEO_FILE', __FILE__ );
 }
 
-// Load the WordPress SEO plugin
+if ( is_admin() ) {
+	// Add the hook to upgrade premium.
+	require_once( plugin_dir_path( WPSEO_FILE ) . 'premium/classes/class-upgrade-manager.php' );
+	add_action( 'wpseo_run_upgrade', array( new WPSEO_Upgrade_Manager, 'check_update' ) );
+}
+
+// Load the WordPress SEO plugin.
 require_once( 'wp-seo-main.php' );
 
-// Premium setup
+/**
+ * The premium setup
+ */
 function wpseo_premium_init() {
 	if ( file_exists( WPSEO_PATH . 'premium/class-premium.php' ) ) {
 		require_once( WPSEO_PATH . 'premium/class-premium.php' );
@@ -51,7 +59,7 @@ function wpseo_premium_init() {
 
 add_action( 'plugins_loaded', 'wpseo_premium_init', 14 );
 
-// Activation hook
+// Activation hook.
 if ( is_admin() ) {
 	require_once( WPSEO_PATH . 'premium/class-premium.php' );
 	register_activation_hook( __FILE__, array( 'WPSEO_Premium', 'install' ) );

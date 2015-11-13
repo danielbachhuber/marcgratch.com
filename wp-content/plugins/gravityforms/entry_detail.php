@@ -17,8 +17,8 @@ class GFEntryDetail {
 
 		$form    = RGFormsModel::get_form_meta( absint( $_GET['id'] ) );
 		$form_id = absint( $form['id'] );
-		$form    = apply_filters( 'gform_admin_pre_render_' . $form_id, apply_filters( 'gform_admin_pre_render', $form ) );
-		$lead_id = absint( rgget( 'lid' ) );
+		$form    = gf_apply_filters( 'gform_admin_pre_render', $form_id, $form );
+		$lead_id = rgpost( 'entry_id' ) ? absint( rgpost( 'entry_id' ) ): absint( rgget( 'lid' ) );
 
 		$filter = rgget( 'filter' );
 		$status = in_array( $filter, array( 'trash', 'spam' ) ) ? $filter : 'active';
@@ -113,14 +113,23 @@ class GFEntryDetail {
 					$files = array();
 				}
 
+				$original_entry = $lead;
+
 				GFFormsModel::$uploaded_files[ $form_id ] = $files;
 				GFFormsModel::save_lead( $form, $lead );
 
-				do_action( 'gform_after_update_entry', $form, $lead['id'] );
-				do_action( "gform_after_update_entry_{$form['id']}", $form, $lead['id'] );
+				/**
+				 * Fires after the Entry is updated from the entry detail page.
+				 *
+				 * @param array $form The form object for the entry.
+				 * @param integer $lead['id'] The entry ID.
+				 * @param array $original_entry The entry object before being updated.
+				 */
+				gf_do_action( 'gform_after_update_entry', $form['id'], $form, $lead['id'], $original_entry );
 
 				$lead = RGFormsModel::get_lead( $lead['id'] );
 				$lead = GFFormsModel::set_entry_meta( $lead, $form );
+
 				break;
 
 			case 'add_note' :
@@ -151,6 +160,17 @@ class GFEntryDetail {
 						GFCommon::log_debug( __METHOD__ . '(): The WordPress phpmailer_init hook has been detected, usually used by SMTP plugins, it can impact mail delivery.' );
 					}
 
+					/**
+					 * Fires after a note is attached to an entry and sent as an email
+					 *
+					 * @param string $result The Error message or success message when the entry note is sent
+					 * @param string $email_to The email address to send the entry note to
+					 * @param string $email_from The email address from which the email is sent from
+					 * @param string $email_subject The subject of the email that is sent
+					 * @param mixed $body The Full body of the email containing the message after the note is sent
+					 * @param array $form The current form object
+					 * @param array $lead The Current lead object
+					 */
 					do_action( 'gform_post_send_entry_note', $result, $email_to, $email_from, $email_subject, $body, $form, $lead );
 				}
 				break;
@@ -348,6 +368,8 @@ class GFEntryDetail {
 		<input type="hidden" name="action" id="action" value="" />
 		<input type="hidden" name="screen_mode" id="screen_mode" value="<?php echo esc_attr( rgpost( 'screen_mode' ) ) ?>" />
 
+		<input type="hidden" name="entry_id" id="entry_id" value="<?php echo absint( $lead['id'] ) ?>" />
+
 		<div class="wrap gf_entry_wrap">
 		<h2 class="gf_admin_page_title">
 			<span><?php echo esc_html__( 'Entry #', 'gravityforms' ) . absint( $lead['id'] ); ?></span><span class="gf_admin_page_subtitle"><span class="gf_admin_page_formid">ID: <?php echo absint( $form['id'] ); ?></span><span class='gf_admin_page_formname'><?php esc_html_e( 'Form Name', 'gravityforms' ) ?>: <?php echo esc_html( $form['title'] );
@@ -413,7 +435,15 @@ class GFEntryDetail {
 
 							if ( ! empty( $lead['payment_status'] ) ) {
 								echo $lead['transaction_type'] != 2 ? esc_html__( 'Payment Status', 'gravityforms' ) : esc_html__( 'Subscription Status', 'gravityforms' ); ?>:
-								<span id="gform_payment_status"><?php echo apply_filters( 'gform_payment_status', $lead['payment_status'], $form, $lead ) ?></span>
+								<span id="gform_payment_status"><?php
+									/**
+									 * Filters through a form payment status and allows modification
+									 *
+									 * @param string $lead['payment_status] A payment status to filter though
+									 * @param array $form The Form Object to filter through
+									 * @param array $lead The Lead Object to filter through
+									 */
+									echo apply_filters( 'gform_payment_status', $lead['payment_status'], $form, $lead ) ?></span>
 								<br /><br />
 								<?php
 								if ( ! empty( $lead['payment_date'] ) ) {
@@ -496,6 +526,12 @@ class GFEntryDetail {
 								$update_button_id = $mode == 'view' ? 'gform_edit_button' : 'gform_update_button';
 								$button_click     = $mode == 'view' ? "jQuery('#screen_mode').val('edit');" : "jQuery('#action').val('update'); jQuery('#screen_mode').val('view');";
 								$update_button    = '<input id="' . $update_button_id . '" ' . $disabled . ' class="button button-large button-primary" type="submit" tabindex="4" value="' . esc_attr( $button_text ) . '" name="save" onclick="' . $button_click . '"/>';
+
+								/**
+								 * A filter to allow the modification of the button to update an entry detail
+								 *
+								 * @param string $update_button The HTML Rendered for the Entry Detail update button
+								 */
 								echo apply_filters( 'gform_entrydetail_update_button', $update_button );
 								if ( $mode == 'edit' ) {
 									echo '&nbsp;&nbsp;<input class="button button-large" type="submit" tabindex="5" value="' . esc_attr__( 'Cancel', 'gravityforms' ) . '" name="cancel" onclick="jQuery(\'#screen_mode\').val(\'view\');"/>';
@@ -510,6 +546,13 @@ class GFEntryDetail {
 		</div>
 
 		<?php
+		
+		/**
+		 * A filter to enable or disable the extra payment details box in an entry
+		 *
+		 * @param bool To enable (true) or disable (false)
+		 * @param array $lead The Lead object to filter
+		 */
 		if ( ! empty( $lead['payment_status'] ) && ! apply_filters( 'gform_enable_entry_info_payment_details', true, $lead ) ) {
 			self::payment_details_box( $lead, $form );
 		}
@@ -647,7 +690,7 @@ class GFEntryDetail {
 	}
 
 	public static function lead_detail_edit( $form, $lead ) {
-		$form    = apply_filters( 'gform_admin_pre_render_' . $form['id'], apply_filters( 'gform_admin_pre_render', $form ) );
+		$form    = gf_apply_filters( 'gform_admin_pre_render', $form['id'], $form );
 		$form_id = absint( $form['id'] );
 		?>
 		<div class="postbox">
@@ -719,6 +762,11 @@ class GFEntryDetail {
 				</select>
 				<?php
 				$apply_button = '<input type="submit" class="button" value="' . esc_attr__( 'Apply', 'gravityforms' ) . '" onclick="jQuery(\'#action\').val(\'bulk\');" style="width: 50px;" />';
+				/**
+				 * A filter to allow you to modify the note apply button
+				 *
+				 * @param string $apply_button The Apply Button HTML
+				 */
 				echo apply_filters( 'gform_notes_apply_button', $apply_button );
 				?>
 			</div>
@@ -763,14 +811,20 @@ class GFEntryDetail {
 						$class = $note->note_type ? " gforms_note_{$note->note_type}" : '';
 						?>
 						<div style="margin-top:4px;">
-							<div class="note-avatar"><?php echo apply_filters( 'gform_notes_avatar', get_avatar( $note->user_id, 48 ), $note ); ?></div>
+							<div class="note-avatar"><?php
+								/**
+								 * Allows filtering of the notes avatar
+								 *
+								 * @param array $note The Note object that is being filtered when modifying the avatar
+								 */
+								echo apply_filters( 'gform_notes_avatar', get_avatar( $note->user_id, 48 ), $note ); ?></div>
 							<h6 class="note-author"><?php echo esc_html( $note->user_name ) ?></h6>
 							<p class="note-email">
 								<a href="mailto:<?php echo esc_attr( $note->user_email ) ?>"><?php echo esc_html( $note->user_email ) ?></a><br />
 								<?php esc_html_e( 'added on', 'gravityforms' ); ?> <?php echo esc_html( GFCommon::format_date( $note->date_created, false ) ) ?>
 							</p>
 						</div>
-						<div class="detail-note-content<?php echo $class ?>"><?php echo esc_html( $note->value ) ?></div>
+						<div class="detail-note-content<?php echo $class ?>"><?php echo nl2br( esc_html( $note->value ) ) ?></div>
 					</td>
 
 				</tr>
@@ -783,6 +837,12 @@ class GFEntryDetail {
 						<textarea name="new_note" style="width:100%; height:50px; margin-bottom:4px;"></textarea>
 						<?php
 						$note_button = '<input type="submit" name="add_note" value="' . esc_attr__( 'Add Note', 'gravityforms' ) . '" class="button" style="width:auto;padding-bottom:2px;" onclick="jQuery(\'#action\').val(\'add_note\');"/>';
+
+						/**
+						 * Allows for modification of the "Add Note" button for Entry Notes
+						 *
+						 * @param string $note_button The HTML for the "Add Note" Button
+						 */
 						echo apply_filters( 'gform_addnote_button', $note_button );
 
 						if ( ! empty( $emails ) ) {
@@ -821,6 +881,13 @@ class GFEntryDetail {
 			$display_empty_fields = rgget( 'gf_display_empty_fields', $_COOKIE );
 		}
 
+		/**
+		 * A filter to set if empty fields shown be shown in the entry details
+		 *
+		 * @param bool $display_empty_fields True or false to show the fields
+		 * @param array $form The Form object to filter
+		 * @param array $lead The Lead object to filter
+		 */
 		$display_empty_fields = apply_filters( 'gform_entry_detail_grid_display_empty_fields', $display_empty_fields, $form, $lead );
 
 		?>
@@ -830,7 +897,7 @@ class GFEntryDetail {
 				<th id="details">
 					<?php
 					$title = sprintf( '%s : %s %s', esc_html( $form['title'] ), esc_html__( 'Entry # ', 'gravityforms' ), absint( $lead['id'] ) );
-					echo apply_filters( 'gravityflow_title_entry_detail', $title, $form, $lead );
+					echo apply_filters( 'gform_entry_detail_title', $title, $form, $lead );
 					?>
 				</th>
 				<th style="width:140px; font-size:10px; text-align: right;">
@@ -914,7 +981,7 @@ class GFEntryDetail {
 				if ( ! empty( $products['products'] ) ) {
 					?>
 					<tr>
-						<td colspan="2" class="entry-view-field-name"><?php echo esc_html( apply_filters( "gform_order_label_{$form_id}", apply_filters( 'gform_order_label', __( 'Order', 'gravityforms' ), $form_id ), $form_id ) ); ?></td>
+						<td colspan="2" class="entry-view-field-name"><?php echo esc_html( gf_apply_filters( 'gform_order_label', $form_id, __( 'Order', 'gravityforms' ), $form_id ) ); ?></td>
 					</tr>
 					<tr>
 						<td colspan="2" class="entry-view-field-value lastrow">
@@ -926,10 +993,10 @@ class GFEntryDetail {
 									<col class="entry-products-col4" />
 								</colgroup>
 								<thead>
-								<th scope="col"><?php echo apply_filters( "gform_product_{$form_id}", apply_filters( 'gform_product', __( 'Product', 'gravityforms' ), $form_id ), $form_id ); ?></th>
-								<th scope="col" class="textcenter"><?php echo esc_html( apply_filters( "gform_product_qty_{$form_id}", apply_filters( 'gform_product_qty', __( 'Qty', 'gravityforms' ), $form_id ), $form_id ) ); ?></th>
-								<th scope="col"><?php echo esc_html( apply_filters( "gform_product_unitprice_{$form_id}", apply_filters( 'gform_product_unitprice', __( 'Unit Price', 'gravityforms' ), $form_id ), $form_id ) ); ?></th>
-								<th scope="col"><?php echo esc_html( apply_filters( "gform_product_price_{$form_id}", apply_filters( 'gform_product_price', __( 'Price', 'gravityforms' ), $form_id ), $form_id ) ); ?></th>
+								<th scope="col"><?php echo gf_apply_filters( 'gform_product', $form_id, __( 'Product', 'gravityforms' ), $form_id ); ?></th>
+								<th scope="col" class="textcenter"><?php echo esc_html( gf_apply_filters( 'gform_product_qty', $form_id, __( 'Qty', 'gravityforms' ), $form_id ) ); ?></th>
+								<th scope="col"><?php echo esc_html( gf_apply_filters( 'gform_product_unitprice', $form_id, __( 'Unit Price', 'gravityforms' ), $form_id ) ); ?></th>
+								<th scope="col"><?php echo esc_html( gf_apply_filters( 'gform_product_price', $form_id, __( 'Price', 'gravityforms' ), $form_id ) ); ?></th>
 								</thead>
 								<tbody>
 								<?php
@@ -1029,6 +1096,7 @@ class GFEntryDetail {
 				<div id="submitcomment" class="submitbox">
 					<div id="minor-publishing" style="padding:10px;">
 						<?php
+
 						$payment_status = apply_filters( 'gform_payment_status', $lead['payment_status'], $form, $lead );
 						if ( ! empty( $payment_status ) ){
 							?>
@@ -1039,6 +1107,12 @@ class GFEntryDetail {
 
 							<?php
 
+							/**
+							 * Allows for modification on the form payment date format
+							 *
+							 * @param array $form The Form object to filter through
+							 * @param array $lead The Lead object to filter through
+							 */
 							$payment_date = apply_filters( 'gform_payment_date', GFCommon::format_date( $lead['payment_date'], false, 'Y/m/d', $lead['transaction_type'] != 2 ), $form, $lead );
 							if ( ! empty( $payment_date ) ) {
 								?>
@@ -1049,6 +1123,13 @@ class GFEntryDetail {
 							<?php
 							}
 
+							/**
+							 * Allows filtering through a payment transaction ID
+							 *
+							 * @param int $lead['transaction_id'] The transaction ID that can be modified
+							 * @param array $form The Form object to be filtered when modifying the transaction ID
+							 * @param array $lead The Lead object to be filtered when modifying the transaction ID
+							 */
 							$transaction_id = apply_filters( 'gform_payment_transaction_id', $lead['transaction_id'], $form, $lead );
 							if ( ! empty( $transaction_id ) ) {
 								?>
@@ -1059,6 +1140,14 @@ class GFEntryDetail {
 							<?php
 							}
 
+							/**
+							 * Filter through the way the Payment Amount is rendered
+							 *
+							 * @param string $lead['payment_amount'] The payment amount taken from the lead object
+							 * @param string $lead['currency'] The payment currency taken from the lead object
+							 * @param array $form The Form onject to filter through
+							 * @param array $lead The lead object to filter through
+							 */
 							$payment_amount = apply_filters( 'gform_payment_amount', GFCommon::to_money( $lead['payment_amount'], $lead['currency'] ), $form, $lead );
 							if ( ! rgblank( $payment_amount ) ) {
 								?>
@@ -1069,6 +1158,13 @@ class GFEntryDetail {
 							<?php
 							}
 						}
+
+						/**
+						 * Fires after the Form Payment Details (The type of payment, the cost, the ID, etc)
+						 *
+						 * @param int $form['id'] The current Form ID
+						 * @param array $lead The current Lead object
+						 */
 						do_action( 'gform_payment_details', $form['id'], $lead );
 
 						?>

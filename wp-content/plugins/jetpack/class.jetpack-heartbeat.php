@@ -91,6 +91,11 @@ class Jetpack_Heartbeat {
 
 		$jetpack->do_stats( 'server_side' );
 
+		/**
+		 * Fires when we synchronize all registered options on heartbeat.
+		 *
+		 * @since 3.3.0
+		 */
 		do_action( 'jetpack_heartbeat' );
 	}
 
@@ -110,6 +115,8 @@ class Jetpack_Heartbeat {
 		$return["{$prefix}is-multisite"]   = is_multisite() ? 'multisite' : 'singlesite';
 		$return["{$prefix}identitycrisis"] = Jetpack::check_identity_crisis( 1 ) ? 'yes' : 'no';
 		$return["{$prefix}plugins"]        = implode( ',', Jetpack::get_active_plugins() );
+
+		$return["{$prefix}single-user-site"]= Jetpack::is_single_user_site();
 
 		$return["{$prefix}manage-enabled"] = Jetpack::is_module_active( 'manage' );
 

@@ -1,5 +1,5 @@
 
-( function( window, $, items, models, views, i18n, nonces ) {
+( function( window, $, items, models, views, i18n, modalinfo, nonces ) {
 	'use strict';
 
 	var modules, list_table, handle_module_tag_click, $the_table, $the_filters, $the_search, $jp_frame, $bulk_button, show_modal, hide_modal, set_modal_tab, originPoint;
@@ -57,7 +57,17 @@
 		$( '.modal ').empty().html( wp.template( 'modal' )( items[ module ] ) );
 		$( '.modal' )[0].setAttribute( 'tabindex', '0' );
 		$( '.modal' ).focus();
+		$( 'body' ).css( 'overflow', 'hidden' );
 	};
+
+	/**
+	 * If modalinfo is defined, auto popup the modal
+	 */
+	$( document ).ready(function() {
+		if ( modalinfo ) {
+			show_modal( modalinfo );
+		}
+	});
 
 	hide_modal = function() {
 		$jp_frame.children( '.modal, .shade' ).hide();
@@ -65,6 +75,8 @@
 		set_modal_tab( null );
 		originPoint.focus();
 		$( '.modal' )[0].removeAttribute( 'tabindex' );
+		$( 'body' ).css( 'overflow', 'auto' );
+		event.preventDefault();
 	};
 
 	set_modal_tab = function( tab ) {
@@ -138,4 +150,4 @@
 		event.preventDefault();
 	} );
 
-} ) ( this, jQuery, window.jetpackModulesData.modules, this.jetpackModules.models, this.jetpackModules.views, window.jetpackModulesData.i18n, window.jetpackModulesData.nonces );
+} ) ( this, jQuery, window.jetpackModulesData.modules, this.jetpackModules.models, this.jetpackModules.views, window.jetpackModulesData.i18n, window.jetpackModulesData.modalinfo, window.jetpackModulesData.nonces );

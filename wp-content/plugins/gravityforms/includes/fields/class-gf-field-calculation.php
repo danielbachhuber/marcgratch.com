@@ -63,7 +63,7 @@ class GF_Field_Calculation extends GF_Field {
 
 		$qty_input_type = GFFormsModel::is_html5_enabled() ? 'number' : 'text';
 
-		$product_quantity_sub_label = apply_filters( "gform_product_quantity_{$form_id}", apply_filters( 'gform_product_quantity', esc_html__( 'Quantity:', 'gravityforms' ), $form_id ), $form_id );
+		$product_quantity_sub_label = gf_apply_filters( 'gform_product_quantity', $form_id, esc_html__( 'Quantity:', 'gravityforms' ), $form_id );
 
 		if ( $is_entry_detail || $is_form_editor  ) {
 			$style          = $this->disableQuantity ? "style='display:none;'" : '';
@@ -81,9 +81,9 @@ class GF_Field_Calculation extends GF_Field {
 			}
 		}
 
-		return "<div class='ginput_container'>
+		return "<div class='ginput_container ginput_container_product_calculation'>
 					<input type='hidden' name='input_{$id}.1' value='{$product_name}' class='gform_hidden' />
-					<span class='ginput_product_price_label'>" . apply_filters( "gform_product_price_{$form_id}", apply_filters( 'gform_product_price', esc_html__( 'Price', 'gravityforms' ), $form_id ), $form_id ) . ":</span> <span class='ginput_product_price' id='{$field_id}'>" . esc_html( GFCommon::to_money( $price, $currency ) ) . "</span>
+					<span class='ginput_product_price_label'>" . gf_apply_filters( 'gform_product_price', $form_id, esc_html__( 'Price', 'gravityforms' ), $form_id ) . ":</span> <span class='ginput_product_price' id='{$field_id}'>" . esc_html( GFCommon::to_money( $price, $currency ) ) . "</span>
 					<input type='hidden' name='input_{$id}.2' id='ginput_base_price_{$form_id}_{$this->id}' class='gform_hidden' value='" . esc_attr( $price ) . "'/>
 					{$quantity_field}
 				</div>";
@@ -105,7 +105,7 @@ class GF_Field_Calculation extends GF_Field {
 
 	public function get_value_save_entry( $value, $form, $input_name, $lead_id, $lead ) {
 		// ignore submitted value and recalculate price in backend
-		list( , , $input_id ) = rgexplode( '_', $input_name, 3 );
+		list( $prefix, $field_id, $input_id ) = rgexplode( '_', $input_name, 3 );
 		if ( $input_id == 2 ) {
 			require_once( GFCommon::get_base_path() . '/currency.php' );
 			$currency = new RGCurrency( GFCommon::get_currency() );

@@ -21,6 +21,7 @@ class Jetpack_Twitter_Timeline_Widget extends WP_Widget {
 	public function __construct() {
 		parent::__construct(
 			'twitter_timeline',
+			/** This filter is documented in modules/widgets/facebook-likebox.php */
 			apply_filters( 'jetpack_widget_name', esc_html__( 'Twitter Timeline', 'jetpack' ) ),
 			array(
 				'classname' => 'widget_twitter_timeline',
@@ -64,8 +65,10 @@ class Jetpack_Twitter_Timeline_Widget extends WP_Widget {
 
 		echo $args['before_widget'];
 
-		if ( $instance['title'] )
+		if ( $instance['title'] ) {
+			/** This filter is documented in core/src/wp-includes/default-widgets.php */
 			echo $args['before_title'] . apply_filters( 'widget_title', $instance['title'] ) . $args['after_title'];
+		}
 
 		$data_attribs = array( 'widget-id', 'theme', 'link-color', 'border-color', 'chrome', 'tweet-limit' );
 		$attribs      = array( 'width', 'height', 'lang' );
@@ -95,11 +98,13 @@ class Jetpack_Twitter_Timeline_Widget extends WP_Widget {
 		$timeline_placeholder = __( 'My Tweets', 'jetpack' );
 
 		/**
-		 * Filter the Timeline placeholder text
+		 * Filter the Timeline placeholder text.
 		 *
-		 * @since 3.4
+		 * @module widgets
 		 *
-		 * @param string $timeline_placeholder Timeline placeholder text
+		 * @since 3.4.0
+		 *
+		 * @param string $timeline_placeholder Timeline placeholder text.
 		 */
 		$timeline_placeholder = apply_filters( 'jetpack_twitter_timeline_placeholder', $timeline_placeholder );
 
@@ -109,6 +114,7 @@ class Jetpack_Twitter_Timeline_Widget extends WP_Widget {
 
 		echo $args['after_widget'];
 
+		/** This action is documented in modules/widgets/social-media-icons.php */
 		do_action( 'jetpack_bump_stats_extras', 'widget', 'twitter_timeline' );
 	}
 
