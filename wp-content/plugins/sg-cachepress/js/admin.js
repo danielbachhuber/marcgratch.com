@@ -123,7 +123,7 @@ var cachepress_test_counter = 0;
 function sg_cachepress_test_submit( )
 {
 	jQuery('.status_test').slideUp();
-	jQuery('#sg-cachepress-test').prop('disabled',true).attr('value','Testing...');
+	jQuery('#sg-cachepress-test').prop('disabled',true).attr('value',sgCachePressL10n.testing);
 	jQuery('#testurl').prop('disabled',true);
 	var postUrl = jQuery("#testurl").val();
 	
@@ -131,19 +131,20 @@ function sg_cachepress_test_submit( )
 	jQuery.post(ajaxUrl,{action:'sg-cachepress-cache-test',url:postUrl},function(result){ sg_cachepress_test_result(result); });
 }
 
+
 function sg_cachepress_test_result(result)
 {
 	cachepress_test_counter = cachepress_test_counter + 1;
 	
 	if(result == 1)
-		sg_cachepress_test_result_display_output( 'CACHED', 'cached' );
+		sg_cachepress_test_result_display_output( sgCachePressL10n.cached, 'cached' );
 
 	if(result == 0 && cachepress_test_counter == 1)
 		setTimeout("sg_cachepress_test_submit();",2000);
 	else if(result == 0)
-		sg_cachepress_test_result_display_output( 'NOT CACHED', 'notcached' );
+		sg_cachepress_test_result_display_output( sgCachePressL10n.notcached, 'notcached' );
 	else if(result == 2)
-		sg_cachepress_test_result_display_output( 'CANT GET HEADERS', 'notcached' );
+		sg_cachepress_test_result_display_output( sgCachePressL10n.noheaders, 'notcached' );
 
 	if(result == 1 || cachepress_test_counter == 2)
 		cachepress_test_counter = 0;
@@ -151,7 +152,7 @@ function sg_cachepress_test_result(result)
 
 function sg_cachepress_test_result_display_output( text, classText )
 {
-	jQuery('#sg-cachepress-test').prop('disabled',false).attr('value','Test URL');
+	jQuery('#sg-cachepress-test').prop('disabled',false).attr('value',sgCachePressL10n.testurl);
 	jQuery('#testurl').prop('disabled',false);
 	
 	jQuery('#status_test_value').html('<span class="'+classText+'">'+text+'</span>');

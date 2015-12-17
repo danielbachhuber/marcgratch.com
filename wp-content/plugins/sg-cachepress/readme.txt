@@ -1,8 +1,8 @@
 === SG CachePress ===
-Contributors: Hristo Sg
+Contributors: Hristo Sg, danielkanchev
 Tags: nginx, caching, speed, memcache, memcached, performance, siteground, nginx, supercacher
 Requires at least: 3.0.1
-Tested up to: 4.3
+Tested up to: 4.4
 Stable tag: 1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -54,6 +54,23 @@ This field allows you to exclude URLs from the cache. This means that if you nee
 * Enable Memcached - Store in the server's memory (using Memcached) frequently executed queries to the database for a faster access on a later use.
 
 == Changelog ==
+
+= Version 2.3.2 =
+* Fixed bug with Memcached cache purge
+
+= Version 2.3.1 =
+* Interface improventes
+* Internationalization support added
+* Spanish translation added by <a href="https://www.siteground.es">SiteGround.es</a>
+* Bulgarian translation added
+
+= Version 2.3.0 =
+* Memcached support added
+* Better PHP7 compatibility
+
+= Version 2.2.11 =
+* Improved compatibility with WP Rocket
+* Bug fixes
 
 = Version 2.2.10 =
 * Revamped notices work

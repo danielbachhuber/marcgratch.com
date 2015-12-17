@@ -3,7 +3,7 @@
 		<thead>
 			<tr>
 				<th>&nbsp;</th>
-				<th><?php esc_html_e( 'Date', 'sprout-invoices' ) ?></th>
+				<th><?php esc_html_e( 'Info', 'sprout-invoices' ) ?></th>
 				<th><?php esc_html_e( 'Activity', 'sprout-invoices' ) ?></th>
 				<th><?php esc_html_e( 'Note', 'sprout-invoices' ) ?></th>
 				<th><?php esc_html_e( 'Time', 'sprout-invoices' ) ?></th>
@@ -37,6 +37,7 @@
 
 					$time = SI_Time::get_time_entry( $time_id );
 					$activity = SI_Time::get_instance( $time->get_associate_id() );
+					$user = get_userdata( $data['user_id'] );
 
 					$cost = ( is_a( $activity, 'SI_Time' ) ) ? $data['time_val'] * $activity->get_default_rate()  : 0 ;
 					$total_time += (float) $data['time_val'];
@@ -52,7 +53,7 @@
 					} ?>
 						<tr id="<?php echo (int) $time_id ?>">
 							<td><span class="time_entry_deletion item_action item_delete" data-id="<?php echo esc_attr( $time_id ); ?>" data-project-id="<?php echo esc_attr( $project_id ); ?>" data-nonce="<?php echo wp_create_nonce( SI_Time_Tracking_Premium::SUBMISSION_NONCE ) ?>"></span></td>
-							<td><?php echo date_i18n( get_option( 'date_format' ), $data['date'] ) ?></td>
+							<td><span class="time_submitted_by"><a href="<?php echo get_edit_user_link( $user->ID ) ?>"><?php echo $user->data->display_name ?></a></span><br/>@&nbsp;<?php echo date_i18n( get_option( 'date_format' ), $data['date'] ) ?></td>
 							<td><?php
 							$activity_title = ( is_a( $activity, 'SI_Time' ) ) ? $activity->get_title() : '&nbsp;' ;
 							echo esc_html( $activity_title );  ?></td>

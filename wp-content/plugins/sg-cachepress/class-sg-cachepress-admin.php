@@ -12,8 +12,6 @@
 
 /** SG CachePress purge cache admin class */
 
-
-
 class SG_CachePress_Admin {
 
 	/**
@@ -107,6 +105,7 @@ class SG_CachePress_Admin {
 	function load_admin_global_js()
 	{
 	    wp_enqueue_script( '', plugins_url( 'js/admin_global.js', __FILE__ ), array( 'jquery' ), SG_CachePress::VERSION, true );
+
 	}
 	
 	/**
@@ -179,7 +178,7 @@ class SG_CachePress_Admin {
 	function add_admin_bar_purge( $wp_admin_bar ){
 		$args = array(
 				'id'    => 'SG_CachePress_Supercacher_Purge',
-				'title' => 'Purge SG Cache',
+				'title' => __('Purge SG Cache','sg-cachepress'),
 				'href'  => wp_nonce_url( admin_url( 'admin-post.php?action=sg-cachepress-purge' ),'sg-cachepress-purge' ),
 				'meta'  => array( 'class' => 'sg-cachepress-admin-bar-purge' )
 		);
@@ -279,9 +278,15 @@ class SG_CachePress_Admin {
 				'purge'   => __( 'Purge the Cache', 'sg-cachepress' ),
 				'purging' => __( 'Purging, please wait...', 'sg-cachepress' ),
 				'updating' => __( 'Updating, please wait...', 'sg-cachepress' ),
-				'updated'  => __( 'Update the Exclude List' ),
+				'updated'  => __( 'Update the Exclude List', 'sg-cachepress' ),
 				'purged'  => __( 'Successfully Purged', 'sg-cachepress' ),
-			    'ajax_url' => admin_url( 'admin-ajax.php' )
+			    'ajax_url' => admin_url( 'admin-ajax.php' ),
+			    'testing' => __( 'Testing...', 'sg-cachepress' ),
+			    'cached' => __( 'CACHED', 'sg-cachepress' ),
+			    'notcached' => __( 'DYNAMIC', 'sg-cachepress' ),
+			    'noheaders' => __( 'CAN\'T GET HEADERS', 'sg-cachepress' ),
+			    'testurl' => __( 'Test URL', 'sg-cachepress' ),
+			    'showstat' => __( 'Test URL', 'sg-cachepress' )	    
 			);
 			wp_localize_script( SG_CachePress::PLUGIN_SLUG . '-admin', 'sgCachePressL10n', $strings );
 		}

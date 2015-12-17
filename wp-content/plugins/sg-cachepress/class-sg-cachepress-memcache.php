@@ -162,12 +162,28 @@ class SG_CachePress_Memcache {
 			return false;
 
 		$object_cache_file = $this->get_object_cache_file();
+        
+		if ( class_exists( 'Memcached' ) )
+		{
+		    //Use Memcached
+		    $memcache = new Memcached();
+		    @$memcache->addServer( $ip, $port );
+		    $file = 'memcached.tpl';
+		    $type = 'Memcached';
+		}
+		else
+		{
+		    //Use Memcache
+		    $memcache = new Memcache;
+		    @$memcache->connect( $ip, $port );
+		    $file = 'memcache.tpl';
+		    $type = 'Memcache';
+		}
 
-		$memcache = new Memcache;
- 		@$memcache->connect( $ip, $port );
-
-		if ( $this->memcached_connection_is_working( $memcache ) )
-			return $this->create_memcached_dropin( $ip, $port );
+		if ( $this->memcached_connection_is_working( $memcache, $type ) )
+		{
+		    return $this->create_memcached_dropin( $ip, $port, $file );
+		}
 
 		$this->remove_memcached_dropin();
 
@@ -183,10 +199,15 @@ class SG_CachePress_Memcache {
 	 *
 	 * @return bool True on retrieving exactly the value set, false otherwise.
 	 */
-	protected function memcached_connection_is_working( $connection ) {
+	protected function memcached_connection_is_working( $connection, $type = 'Memcache' ) {
 		if ( ! $connection )
 			return false;
-		@$connection->set( 'SGCP_Memcached_Test', 'Test!1', MEMCACHE_COMPRESSED, 50 );
+		
+		if( $type == 'Memcache' )
+            @$connection->set( 'SGCP_Memcached_Test', 'Test!1', MEMCACHE_COMPRESSED, 50 );
+		elseif( $type == 'Memcached' )
+		    @$connection->set( 'SGCP_Memcached_Test', 'Test!1', 50 );
+		    
 		if ( @$connection->get( 'SGCP_Memcached_Test' ) === 'Test!1' )
 		{
 			$connection->flush();
@@ -205,9 +226,9 @@ class SG_CachePress_Memcache {
 	 *
 	 * @return bool True if the template was successfully copied, false otherwise.
 	 */
-	protected function create_memcached_dropin( $ip, $port ) {
+	protected function create_memcached_dropin( $ip, $port, $file ) {
 		$object_cache_file = $this->get_object_cache_file();
-		$template = file_get_contents( dirname( __FILE__ ) . '/memcache.tpl' );
+		$template = file_get_contents( dirname( __FILE__ ) . "/" . $file );
 		$find = '@changedefaults@';
  		$replace = "{$ip}:{$port}";
  		$new_object_cache = str_replace( $find, $replace, $template );
