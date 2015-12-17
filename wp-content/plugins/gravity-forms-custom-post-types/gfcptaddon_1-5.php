@@ -120,11 +120,8 @@ if (!class_exists('GFCPTAddon1_5')) {
                     <select id="field_populate_taxonomy" onchange="SetFieldProperty('populateTaxonomy', jQuery(this).val());" style="margin-top:10px; display:none;">
                         <option value="" style="color:#999;">Select a Taxonomy</option>
                     <?php
-                    $args=array(
-                      'public'   => true,
-                      '_builtin' => false
-                    );
-                    $taxonomies = get_taxonomies($args, 'objects');
+                    $taxonomies_type_args = gf_apply_filters( 'gfcpt_tax_args', array( $form_id ), array( 'public'   => true, '_builtin' => false ), $form_id );
+                    $taxonomies = get_taxonomies($taxonomies_type_args, 'objects');
                     foreach($taxonomies as $taxonomy): ?>
                         <option value="<?php echo $taxonomy->name; ?>"><?php echo $taxonomy->label; ?></option>
                     <?php endforeach; ?>
@@ -140,10 +137,8 @@ if (!class_exists('GFCPTAddon1_5')) {
                       <select id="field_populate_post_type" onchange="SetFieldProperty('populatePostType', jQuery(this).val());">
                           <option value="" style="color:#999;">Select a Post Type</option>
                       <?php
-                      $args=array(
-                        'public'        => true
-                      );
-                      $post_types = get_post_types($args, 'objects');
+                      $post_type_args = gf_apply_filters( 'gfcpt_post_type_args', array( $form_id ), array( 'public' => true ), $form_id );
+                      $post_types = get_post_types( $post_type_args, 'objects' );
                       foreach($post_types as $post_type): ?>
                           <option value="<?php echo $post_type->name; ?>"><?php echo $post_type->label; ?></option>
                       <?php endforeach; ?>
@@ -165,11 +160,8 @@ if (!class_exists('GFCPTAddon1_5')) {
                       <select id="field_save_to_taxonomy" onchange="SetFieldProperty('saveToTaxonomy', jQuery(this).val());">
                           <option value="" style="color:#999;">Select a Taxonomy</option>
                       <?php
-                      $args=array(
-                        'public'   => true,
-                        '_builtin' => false
-                      );
-                      $taxonomies = get_taxonomies($args, 'objects');
+                      $taxonomies_type_args = gf_apply_filters( 'gfcpt_tax_args', array( $form_id ), array( 'public'   => true, '_builtin' => false ), $form_id );
+                      $taxonomies = get_taxonomies($taxonomies_type_args, 'objects');
                       foreach($taxonomies as $taxonomy):
                           if ($taxonomy->hierarchical === false) {?>
                           <option value="<?php echo $taxonomy->name; ?>"><?php echo $taxonomy->label; ?></option>
