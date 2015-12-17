@@ -1,3 +1,7 @@
+= 3.1 =
+
+* NEW: Filter Stripe.js attributes
+
 = 3.0 =
 
 * NEW: Stripe Checkout

@@ -9,7 +9,7 @@
  * @wordpress-plugin
  * Plugin Name:       SG CachePress
  * Description:       Through the settings of this plugin you can manage how your Wordpress interracts with NGINX and Memcached.
- * Version:           2.2.10
+ * Version:           2.3.2
  * Author:            SiteGround
  * Text Domain:       sg-cachepress
  * Domain Path:       /languages
@@ -19,6 +19,13 @@
 if ( ! defined( 'WPINC' ) ) {
 	die;
 }
+
+// Load text Domain
+add_action( 'plugins_loaded', 'sgcachepress_load_textdomain' );
+function sgcachepress_load_textdomain() {
+  load_plugin_textdomain( 'sg-cachepress', false, plugin_basename( dirname( __FILE__ ) ) . '/languages' ); 
+}
+
 
 // @todo Consider an autoloader?
 require plugin_dir_path( __FILE__ ) . 'class-sg-cachepress.php';
@@ -36,6 +43,19 @@ register_deactivation_hook( __FILE__, array( 'SG_CachePress', 'deactivate' ) );
 add_action( 'plugins_loaded','sg_cachepress_start' );
 add_action( 'admin_init', array('SG_CachePress','admin_init_cachepress') );
 
+add_action( 'init', 'disable_other_caching_plugins' );
+
+
+/**
+ * Disables Other Caching Plugins if SG SuperCacher is enabled
+ */
+function disable_other_caching_plugins()
+{
+    $sg_cachepress_options        = new SG_CachePress_Options;
+    if( $sg_cachepress_options->is_enabled('enable_cache') )
+        add_filter( 'do_rocket_generate_caching_files', '__return_false' );
+}
+
 /**
  * Initialise the classes in this plugin.
  *
@@ -49,11 +69,11 @@ function sg_cachepress_start() {
  	$sg_cachepress_admin, $sg_cachepress_supercacher;
 
 	$sg_cachepress_options        = new SG_CachePress_Options;
-	$sg_cachepress                = new SG_CachePress( $sg_cachepress_options );
 	$sg_cachepress_environment    = new SG_CachePress_Environment( $sg_cachepress_options );
 	$sg_cachepress_admin    		= new SG_CachePress_Admin( $sg_cachepress_options );
 	$sg_cachepress_memcache       = new SG_CachePress_Memcache( $sg_cachepress_options, $sg_cachepress_environment );
 	$sg_cachepress_supercacher    = new SG_CachePress_Supercacher( $sg_cachepress_options, $sg_cachepress_environment );
+	$sg_cachepress                = new SG_CachePress( $sg_cachepress_options);
 
 	$sg_cachepress->run();
 	$sg_cachepress_admin->run();

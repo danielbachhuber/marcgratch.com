@@ -65,6 +65,16 @@ class SG_CachePress_Supercacher {
 
 		$this->assign_hooks_for_autoflush();
 	}
+	
+	/**
+	 * Flush Memcache or Memcached
+	 * 
+	 * @return boolean
+	 */
+	public static function flush_memcache()
+	{
+	    return wp_cache_flush();
+	}
 
     /**
      * Call the cache server to purge the cache.
@@ -111,6 +121,8 @@ class SG_CachePress_Supercacher {
       	$response = fgets( $cache_server_socket );
 
       	fclose( $cache_server_socket );
+      	
+      	self::flush_memcache();
 
       	// Only die (or notify) if doing an Ajax request
 		if ( $sg_cachepress_supercacher->environment->action_data_is( 'sg-cachepress-purge' ) ) {

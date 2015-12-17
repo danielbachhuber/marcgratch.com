@@ -90,6 +90,7 @@ class SG_CachePress {
 	 *                              disabled or plugin is activated on an individual blog.
 	 */
 	public static function activate( $network_wide ) {
+	    
 		if ( function_exists( 'is_multisite' ) && is_multisite() ) {
 			if ( $network_wide  ) {
 				// Get all blog ids
@@ -107,6 +108,18 @@ class SG_CachePress {
 			self::single_activate();
 		}
 		self::disable_first_run_option();
+		self::clean_object_cache();
+	}
+	
+	/**
+	 * Cleans object cache to replace it with newer one
+	 */
+	private static function clean_object_cache()
+	{
+	    $file = trailingslashit( WP_CONTENT_DIR ) . 'object-cache.php';
+	    if ( is_readable( $file ) ) {
+	        unlink( $file );
+	    }
 	}
 
 	/**

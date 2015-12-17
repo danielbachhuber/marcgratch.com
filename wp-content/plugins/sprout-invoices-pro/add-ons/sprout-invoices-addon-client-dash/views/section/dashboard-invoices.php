@@ -101,10 +101,10 @@
 						<?php do_action( 'si_client_dashboard_payment_info_row', $invoice ); ?>
 						<?php if ( $inv_payments = $invoice->get_payments() ) : ?>
 							<?php foreach ( $inv_payments as $payment_id ) : ?>
-								<?php 
+								<?php
 									$payment = SI_Payment::get_instance( $payment_id );
-									$method = ( strpos( $payment->get_payment_method(), 'credit' ) !== false ) ? $payment->get_payment_method() : __( 'Credit Card', 'sprout-invoices' ) ;
-									 ?>
+									$method = ( strpos( strtolower( $payment->get_payment_method() ), 'credit' ) !== false ) ? __( 'Credit Card', 'sprout-invoices' ) : $payment->get_payment_method();
+										?>
 								<small><?php printf( __( '<b>%s:</b> %s', 'sprout-invoices' ), $method, sa_get_formatted_money( $payment->get_amount(), $invoice_id ) ) ?></small>
 							<?php endforeach ?>
 						<?php endif ?>

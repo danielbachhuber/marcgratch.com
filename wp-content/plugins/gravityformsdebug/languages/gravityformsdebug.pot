@@ -1,0 +1,119 @@
+# Copyright 2009-2015 Rocketgenius, Inc.
+msgid ""
+msgstr ""
+"Project-Id-Version: Gravity Forms Debug Add-on 1.0.beta4.3\n"
+"Report-Msgid-Bugs-To: http://www.gravtiyhelp.com\n"
+"POT-Creation-Date: 2015-11-24 14:11:17+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2015-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Rocketgenius <customerservice@rocketgenius.com>\n"
+"Language-Team: Rocketgenius <customerservice@rocketgenius.com>\n"
+"X-Generator: Gravity Forms Build Server\n"
+"X-Poedit-KeywordsList: "
+"__;_e;_x:1,2c;_ex:1,2c;_n:1,2;_nx:1,2,4c;_n_noop:1,2;_nx_noop:1,2,3c;esc_"
+"attr__;esc_html__;esc_attr_e;esc_html_e;esc_attr_x:1,2c;esc_html_x:1,2c;\n"
+"Project-Id-Version: gravityformsdebug\n"
+"Language: en_US\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-Basepath: ../\n"
+"X-Poedit-Bookmarks: \n"
+"X-Poedit-Country: United States\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"X-Textdomain-Support: yes\n"
+
+#: debug.php:98
+msgid "This subview does not exist."
+msgstr ""
+
+#: debug.php:110 debug.php:647
+msgid "Conflict Tester"
+msgstr ""
+
+#: debug.php:191
+msgid "There was an issue installing the conflict tester."
+msgstr ""
+
+#: debug.php:203
+msgid "Conflict Tester Status"
+msgstr ""
+
+#: debug.php:206
+msgid "Disable Conflict Tester"
+msgstr ""
+
+#: debug.php:208
+msgid "Enable Conflict Tester"
+msgstr ""
+
+#: debug.php:214
+msgid ""
+"All plugins will be disabled and a default WordPress theme will be used "
+"when enabled. This only applies to the currently logged in user. The "
+"currently active plugins and theme will load for all other users and "
+"visitors."
+msgstr ""
+
+#: debug.php:222
+msgid "Default Theme"
+msgstr ""
+
+#: debug.php:233
+msgid ""
+"You do not have any WordPress default themes installed. Please install "
+"%1$s%3$s%2$s to complete a full conflict test."
+msgstr ""
+
+#: debug.php:254
+msgid "Plugins"
+msgstr ""
+
+#: debug.php:257
+msgid "Save Active Plugins"
+msgstr ""
+
+#: debug.php:271
+msgid "Gravity Forms Plugins"
+msgstr ""
+
+#: debug.php:276 debug.php:315
+msgid "Select All"
+msgstr ""
+
+#: debug.php:278 debug.php:317
+msgid "Denotes Orginally Active Plugin"
+msgstr ""
+
+#: debug.php:310
+msgid "Other Plugins"
+msgstr ""
+
+#: debug.php:356
+msgid "Disable Link"
+msgstr ""
+
+#: debug.php:359
+msgid "To manually disable the Conflict Tester, use the above URL."
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "Gravity Forms Debug Add-on"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid "http://www.gravityforms.com"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid "Helps debug issues with Gravity Forms."
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "rocketgenius"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "http://www.rocketgenius.com"
+msgstr ""

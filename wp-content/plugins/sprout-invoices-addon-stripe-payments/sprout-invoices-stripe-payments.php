@@ -4,14 +4,14 @@ Plugin Name: Sprout Invoices Add-on - Stripe Payments
 Plugin URI: https://sproutapps.co/marketplace/stripe-payments/
 Description: Accept Stripe Payments with Sprout Invoices.
 Author: Sprout Apps
-Version: 3.0
+Version: 3.1
 Author URI: https://sproutapps.co
 */
 
 /**
  * Plugin File
  */
-define( 'SA_ADDON_STRIPE_VERSION', '3.0' );
+define( 'SA_ADDON_STRIPE_VERSION', '3.1' );
 define( 'SA_ADDON_STRIPE_DOWNLOAD_ID', 141 );
 define( 'SA_ADDON_STRIPE_FILE', __FILE__ );
 define( 'SA_ADDON_STRIPE_NAME', 'Sprout Invoices Stripe Payments' );

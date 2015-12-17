@@ -75,7 +75,7 @@ class SA_Stripe extends SI_Credit_Card_Processors {
 	public static function register() {
 
 		// Register processor
-		self::add_payment_processor( __CLASS__, self::__( 'Stripe' ) );
+		self::add_payment_processor( __CLASS__, __( 'Stripe' , 'sprout-invoices' ) );
 
 		// Enqueue Scripts
 		if ( apply_filters( 'si_remove_scripts_styles_on_doc_pages', '__return_true' ) ) {
@@ -93,7 +93,7 @@ class SA_Stripe extends SI_Credit_Card_Processors {
 	}
 
 	public static function public_name() {
-		return self::__( 'Credit Card' );
+		return __( 'Credit Card' , 'sprout-invoices' );
 	}
 
 	public static function checkout_options() {
@@ -104,7 +104,7 @@ class SA_Stripe extends SI_Credit_Card_Processors {
 				SI_URL . '/resources/front-end/img/amex.png',
 				SI_URL . '/resources/front-end/img/discover.png',
 				),
-			'label' => self::__( 'Credit Card' ),
+			'label' => __( 'Credit Card' , 'sprout-invoices' ),
 			'accepted_cards' => array(
 				'visa',
 				'mastercard',
@@ -166,51 +166,51 @@ class SA_Stripe extends SI_Credit_Card_Processors {
 		// Settings
 		$settings = array(
 			'si_stripe_settings' => array(
-				'title' => self::__( 'Stripe Settings' ),
+				'title' => __( 'Stripe Settings' , 'sprout-invoices' ),
 				'weight' => 200,
 				'tab' => self::get_settings_page( false ),
 				'settings' => array(
 					self::API_MODE_OPTION => array(
-						'label' => self::__( 'Mode' ),
+						'label' => __( 'Mode' , 'sprout-invoices' ),
 						'option' => array(
 							'type' => 'radios',
 							'options' => array(
-								self::MODE_LIVE => self::__( 'Live' ),
-								self::MODE_TEST => self::__( 'Test' ),
+								self::MODE_LIVE => __( 'Live' , 'sprout-invoices' ),
+								self::MODE_TEST => __( 'Test' , 'sprout-invoices' ),
 								),
 							'default' => self::$api_mode,
 							)
 						),
 					self::API_SECRET_KEY_OPTION => array(
-						'label' => self::__( 'Live Secret Key' ),
+						'label' => __( 'Live Secret Key' , 'sprout-invoices' ),
 						'option' => array(
 							'type' => 'text',
 							'default' => self::$api_secret_key,
 							)
 						),
 					self::API_PUB_KEY_OPTION => array(
-						'label' => self::__( 'Live Publishable Key' ),
+						'label' => __( 'Live Publishable Key' , 'sprout-invoices' ),
 						'option' => array(
 							'type' => 'text',
 							'default' => self::$api_pub_key,
 							)
 						),
 					self::API_SECRET_KEY_TEST_OPTION => array(
-						'label' => self::__( 'Test Secret Key' ),
+						'label' => __( 'Test Secret Key' , 'sprout-invoices' ),
 						'option' => array(
 							'type' => 'text',
 							'default' => self::$api_secret_key_test,
 							)
 						),
 					self::API_PUB_KEY_TEST_OPTION => array(
-						'label' => self::__( 'Test Publishable Key' ),
+						'label' => __( 'Test Publishable Key' , 'sprout-invoices' ),
 						'option' => array(
 							'type' => 'text',
 							'default' => self::$api_pub_key_test,
 							)
 						),
 					self::CURRENCY_CODE_OPTION => array(
-						'label' => self::__( 'Currency Code' ),
+						'label' => __( 'Currency Code' , 'sprout-invoices' ),
 						'option' => array(
 							'type' => 'text',
 							'default' => self::$currency_code,
@@ -218,23 +218,23 @@ class SA_Stripe extends SI_Credit_Card_Processors {
 							)
 						),
 					self::MODAL_JS_OPTION => array(
-						'label' => self::__( 'Use Stripe Checkout' ),
+						'label' => __( 'Use Stripe Checkout' , 'sprout-invoices' ),
 						'option' => array(
-							'label' => self::__( 'Stripe Checkout uses a slick modal pop-up to handle the credit card payment.' ),
+							'label' => __( 'Stripe Checkout uses a slick modal pop-up to handle the credit card payment.' , 'sprout-invoices' ),
 							'type' => 'checkbox',
 							'default' => self::$payment_modal,
 							'value' => '1',
-							'description' => self::__( 'Disable if you rather use the credit card form that is integrated with Sprout Invoices.' )
+							'description' => __( 'Disable if you rather use the credit card form that is integrated with Sprout Invoices.' , 'sprout-invoices' )
 							)
 						),
 					self::DISABLE_JS_OPTION => array(
-						'label' => self::__( 'Disable Stripe JS' ),
+						'label' => __( 'Disable Stripe JS' , 'sprout-invoices' ),
 						'option' => array(
-							'label' => self::__( 'Disable Stripe.js' ),
+							'label' => __( 'Disable Stripe.js' , 'sprout-invoices' ),
 							'type' => 'checkbox',
 							'default' => self::$disable_stripe_js,
 							'value' => '1',
-							'description' => self::__( 'Only recommended if you\'re running a site with SSL already. Don\'t bother with this setting if Stripe Checkout is used.' )
+							'description' => __( 'Only recommended if you\'re running a site with SSL already. Don\'t bother with this setting if Stripe Checkout is used.' , 'sprout-invoices' )
 							)
 						),
 					)
@@ -258,18 +258,27 @@ class SA_Stripe extends SI_Credit_Card_Processors {
 
 		$key = ( self::$api_mode === self::MODE_TEST ) ? self::$api_pub_key_test : self::$api_pub_key ;
 		$payment_amount = ( si_has_invoice_deposit( $invoice->get_id() ) ) ? $invoice->get_deposit() : $invoice->get_balance();
+
+		$data_attributes = array(
+				'key' => $key,
+				'name' => get_bloginfo( 'name' ),
+				'email' => $user_email,
+				//'image' => ( get_theme_mod( 'si_logo' ) ) ? esc_url( get_theme_mod( 'si_logo', si_doc_header_logo_url() ) ) : si_doc_header_logo_url(),
+				'description' => $invoice->get_title(),
+				'currency' => self::get_currency_code( $invoice_id ),
+				'amount' => self::convert_money_to_cents( $payment_amount ),
+				'allow-remember-me' => 'false',
+			);
+		$data_attributes = apply_filters( 'si_stripe_js_data_attributes', $data_attributes, $invoice_id );
 		?>
 			<form action="<?php echo add_query_arg( array( SI_Checkouts::CHECKOUT_ACTION => SI_Checkouts::PAYMENT_PAGE ),si_get_credit_card_checkout_form_action() ) ?>" method="POST" class="button" id="stripe_pop_form">
 				<input type="hidden" name="<?php echo SI_Checkouts::CHECKOUT_ACTION ?>" value="<?php echo SI_Checkouts::PAYMENT_PAGE ?>" />
 				<script
 					src="https://checkout.stripe.com/checkout.js" class="stripe-button"
-					data-key="<?php echo esc_js( $key ) ?>"
-					data-name="<?php echo esc_js( get_bloginfo( 'name' ) ) ?>"
-					data-email="<?php echo esc_js( $user_email ) ?>"
-					data-description="<?php echo esc_js( $invoice->get_title() ) ?>"
-					data-currency="<?php echo esc_js( self::get_currency_code( $invoice_id ) ) ?>"
-					data-amount="<?php echo esc_js( self::convert_money_to_cents( $payment_amount ) ) ?>">
-				</script>
+					<?php foreach ( $data_attributes as $attribute => $value ) : ?>
+						data-<?php echo esc_js( $attribute ) ?>="<?php echo esc_js( $value ) ?>"
+					<?php endforeach ?>
+				></script>
 			</form>
 			<style type="text/css">
 				#payment_selection.dropdown {
@@ -357,7 +366,7 @@ class SA_Stripe extends SI_Credit_Card_Processors {
 	 * @return
 	 */
 	public static function modify_credit_form() {
-		printf( '<div class="security_message clearfix"><span class="icon-vault"></span> %s</div>', self::__( 'This is a secure SSL encrypted payment.' ) );
+		printf( '<div class="security_message clearfix"><span class="icon-vault"></span> %s</div>', __( 'This is a secure SSL encrypted payment.' , 'sprout-invoices' ) );
 		echo '<input type="hidden" name="stripe_charge_token" value="">';
 		echo '<div id="stripe_errors" class="sa-message error"></div><!-- #stripe_errors -->';
 	}
@@ -558,7 +567,7 @@ class SA_Stripe extends SI_Credit_Card_Processors {
 		return $customer_id;
 	}
 
-	private function get_currency_code( $invoice_id ) {
+	private static function get_currency_code( $invoice_id ) {
 		return apply_filters( 'si_currency_code', self::$currency_code, $invoice_id, self::PAYMENT_METHOD );
 	}
 
@@ -726,9 +735,9 @@ class SA_Stripe extends SI_Credit_Card_Processors {
 
 			$status = self::get_subscription_status( $data['api_response']['id'], $data['api_response']['subscription_id'] );
 
-			printf( self::__( '<b>Current Payment Status:</b> <code>%s</code>' ), $status );
+			printf( __( '<b>Current Payment Status:</b> <code>%s</code>' , 'sprout-invoices' ), $status );
 			echo ' &mdash; ';
-			self::_e( 'Stripe Subscription ID: ' );
+			_e( 'Stripe Subscription ID: ' , 'sprout-invoices' );
 			if ( isset( $data['live'] ) && ! $data['live'] ) {
 				printf( '<a class="payment_profile_link" href="https://dashboard.stripe.com/test/customers/%s" target="_blank">%s</a>', $data['api_response']['id'], $data['api_response']['subscription_id'] );
 			}

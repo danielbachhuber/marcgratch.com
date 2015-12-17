@@ -31,7 +31,7 @@ if ( empty( $time_records ) ) {
 	<table class="table sa_table sa_table-hover">
 		<thead>
 			<tr>
-				<th><?php esc_html_e( 'Date' , 'sprout-invoices' ) ?></th>
+				<th><?php esc_html_e( 'Info' , 'sprout-invoices' ) ?></th>
 				<th><?php esc_html_e( 'Activity' , 'sprout-invoices' ) ?></th>
 				<th><?php esc_html_e( 'Note' , 'sprout-invoices' ) ?></th>
 				<th><?php esc_html_e( 'Time' , 'sprout-invoices' ) ?></th>
@@ -55,6 +55,7 @@ if ( empty( $time_records ) ) {
 				$cost = ( is_a( $activity, 'SI_Time' ) ) ? $data['time_val'] * $activity->get_default_rate()  : 0 ;
 				$total_time += (float) $data['time_val'];
 				$total_cost += $cost;
+				$user = get_userdata( $data['user_id'] );
 
 				if ( isset( $data['invoice_id'] ) ) {
 					$billed_total_time += (float) $data['time_val'];
@@ -65,7 +66,7 @@ if ( empty( $time_records ) ) {
 					$unbilled_total_cost += $cost;
 				} ?>
 				<tr id="<?php echo (int) $time_id ?>">
-					<td><?php echo date_i18n( get_option( 'date_format' ), $data['date'] ) ?></td>
+					<td><span class="time_submitted_by"><a href="<?php echo get_edit_user_link( $user->ID ) ?>"><?php echo $user->data->display_name ?></a></span> @&nbsp;<?php echo date_i18n( get_option( 'date_format' ), $data['date'] ) ?></td>
 					<td><?php
 					$activity_title = ( is_a( $activity, 'SI_Time' ) ) ? $activity->get_title() : '&nbsp;' ;
 					echo esc_html( $activity_title );  ?></td>

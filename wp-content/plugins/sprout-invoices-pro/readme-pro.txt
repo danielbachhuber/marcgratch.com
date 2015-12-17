@@ -4,7 +4,7 @@ Donate link: https://sproutapps.co/
 Tags: invoicing, estimates, payments, web invoice, bill, paypal, invoice, pay, online payment, send invoice, bill clients, credit cards, stripe, freshbooks, harvest, wp-invoice
 Requires at least: 3.8
 Tested up to: 4.3
-Stable tag: 9.1.1
+Stable tag: 9.2.2
 
 == Description ==
 
@@ -22,6 +22,26 @@ The plugin should already be installed at this point. If you still need help che
 **Please visit the [FAQ at Sprout Apps](https://sproutapps.co/support/knowledgebase/sprout-invoices/faqs/).**
 
 == Changelog ==
+
+= 9.2.2 =
+
+* UPDATE: Added more line item totals within the admin
+* FIX: Cloning line items would result in descriptions that couldn't be saved.
+* FIX: Extreme edge case calculation issues
+
+= 9.2.1 =
+
+* UPDATE: Theme compatibility improvements, e.g select2
+* FIX: discount calculation improvements
+
+= 9.2.0.1 =
+
+* FIX: Estimates issue
+
+= 9.2 =
+
+* FIX: Parent line item totals
+* OPT: Slight optimization for estimates and invoices
 
 = 9.1.1 =
 
