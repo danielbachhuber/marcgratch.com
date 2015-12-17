@@ -8,6 +8,7 @@ Thumbs.db
 *.log
 robots.txt
 web.config
+*.sql
 
 # Godaddy Specific
 wp-admin/
