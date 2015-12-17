@@ -19,9 +19,7 @@ do_action( 'pre_si_estimate_view' ); ?><!DOCTYPE html>
 	<head>
 		<meta charset="<?php bloginfo( 'charset' ); ?>" />
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title><?php wp_title( '|', true, 'right' ); ?></title>
 		<link rel="profile" href="http://gmpg.org/xfn/11" />
-		<link rel="pingback" href="<?php bloginfo( 'pingback_url' ); ?>" />
 		<?php si_head(); // styles and scripts are filtered ?>
 		<meta name="robots" content="noindex, nofollow" />
 	</head>
@@ -32,7 +30,7 @@ do_action( 'pre_si_estimate_view' ); ?><!DOCTYPE html>
 
 			<div id="doc_header_wrap" class="sticky_header">
 				<header id="header_title">
-					<span class="header_id"><?php printf( esc_html__( 'Estimate %s', 'sprout-invoices' ), intval( si_get_estimate_id() ) ) ?></span>
+					<span class="header_id"><?php printf( esc_html__( 'Estimate %s', 'sprout-invoices' ), si_get_estimate_id() ) ?></span>
 					<div id="doc_actions">
 						<?php do_action( 'si_doc_actions_pre' ) ?>
 						<?php if ( ! si_is_estimate_approved() ) : ?>
@@ -239,6 +237,6 @@ do_action( 'pre_si_estimate_view' ); ?><!DOCTYPE html>
 	</body>
 	<?php do_action( 'si_document_footer' ) ?>
 	<?php si_footer() ?>
-	<!-- Template Version 9.1.1 -->
+	<!-- Template Version 9.2.2 -->
 </html>
 <?php do_action( 'estimate_viewed' ) ?>
