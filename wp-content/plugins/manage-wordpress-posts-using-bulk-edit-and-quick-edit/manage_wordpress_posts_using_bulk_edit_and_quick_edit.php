@@ -555,7 +555,7 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
 	}
 	
 }
-add_action( 'wp_ajax_inline_edit_mg_task_meta', 'inline_edit_mg_task_meta' );
+add_action( 'wp_ajax_inline_edit_mg_task_meta', 'inline_edit_mg_task_meta',9999 );
 function inline_edit_mg_task_meta() {
 
 	$response = false;
@@ -565,22 +565,24 @@ function inline_edit_mg_task_meta() {
 
 	// if we have post IDs
 	if ( ! empty( $post_id ) && is_numeric( $post_id ) ) {
+		if ( ! empty( $_POST['referrer'] ) && ! empty( $_POST['referrer'] ) ) {
 
-		// get the custom fields
-		$custom_fields = array( 'issue_type', 'priority', 'estimated_time' );
-
-		foreach( $custom_fields as $field ) {
+			$field = str_replace('-','_',$_POST['referrer']);
 
 			// if it has a value, doesn't update if empty on bulk
 			if ( isset( $_POST[ $field ] ) && !empty( $_POST[ $field ] ) ) {
 
 				// update for each post ID
+					$old_value = get_post_meta($post_id, $field, true);
+					//$new_value = convert_estimated_time_to_minutes( $_POST[ $field ]);
 					$response = update_post_meta( $post_id, $field, $_POST[ $field ] );
+					$new_data = get_post_meta($post_id, $field, true);
 
 				if ($field === 'estimated_time' && $response === true){
+
 					$r = array(
 							'post_id' => (int)$post_id,
-							$field => (int)get_post_meta($post_id, $field, true)
+							$field => convert_estimated_time_to_minutes($new_data)
 					);
 					$response = json_encode($r, JSON_FORCE_OBJECT);
 				}

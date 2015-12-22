@@ -77,6 +77,15 @@ When populating a Drop Down field with a post type, you may wish to set the sele
 
 == Changelog ==
 
+= 3.1.1 =
+* Updated all calls to get_post_types() to use plugin-specific version which applies the 'gfcpt_post_type_args' filter. Props: mgratch
+* Updated all calls to get_taxonomies() to use plugin-specific version which applies the 'gfcpt_tax_args' filter. Props: mgratch
+* Fixed issue where missing script dependency caused tag-style entry of terms was not working. Props: mgratch
+* Fixed issue where plugin's registration of GF preview styles was overwriting all other preview styles
+* Updated Tag init JS to be bound to the 'gform_post_render' JS event which better supports other plugin integrations
+* Updated Tag init JS file to be loaded in the footer
+* Added 'gfcpt_get_posts_args' filter to allow modifying the posts that are populated into a field
+
 = 3.1 =
 * Added "gfcpt_taxonomy_args" filter to allow modifying the arguments used to retrieve taxonomy terms
 * Added "gfcpt_post_type_args" filter to allow modifying the arguments used to retrive post types for selection in field settings

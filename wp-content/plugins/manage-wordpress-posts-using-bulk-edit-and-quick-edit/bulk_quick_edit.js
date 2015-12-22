@@ -47,7 +47,7 @@
 		}
 	};
 
-	inlineEditPost.save = function( id ) {
+	inlineEditPost.save = function( id, referrer ) {
 
 		$wp_inline_save.apply( this, arguments );
 
@@ -71,7 +71,8 @@
 			post_status: page,
 			issue_type: $issue_type,
 			priority: $priority,
-			estimated_time: $estimated_time
+			estimated_time: $estimated_time,
+			referrer: referrer
 		};
 
 		fields = $('#edit-'+id).find(':input').serialize();
@@ -133,8 +134,8 @@
 		
 	});
 
-	$($the_list).on( 'change', '.iedit select.pods-form-ui-field-type-pick', function( id ) {
-		return inlineEditPost.save(this);
+	$($the_list).on( 'change', '.iedit select.pods-form-ui-field-type-pick', function( e, id ) {
+		return inlineEditPost.save(this, $(e.target).attr('data-name-clean'));
 	});
 
 	$($the_list).on('click', 'td.estimated_time span.editable', function(evt){
@@ -184,7 +185,7 @@
 		input.prop('type','hidden');
 		row.prepend(spinner.fadeIn('slow'));
 
-		return inlineEditPost.save(this);
+		return inlineEditPost.save(this, 'estimated_time');
 	});
 
 })(jQuery);
