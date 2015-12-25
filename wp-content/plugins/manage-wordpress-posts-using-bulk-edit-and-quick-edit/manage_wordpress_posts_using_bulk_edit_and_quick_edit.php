@@ -91,6 +91,7 @@ function manage_wp_posts_be_qe_manage_posts_columns( $columns, $post_type ) {
 					$new_columns[ 'issue_type' ] = 'Issue Type';
 					$new_columns[ 'priority' ] = 'Priority';
 					$new_columns[ 'estimated_time' ] = 'Estimated Time';
+					$new_columns[ 'project' ] = 'Project';
 				}
 					
 			}
@@ -140,6 +141,7 @@ function manage_wp_posts_be_qe_manage_sortable_columns( $sortable_columns ) {
 	$sortable_columns[ 'issue_type' ] = 'issue_type';
 	$sortable_columns[ 'priority' ] = 'priority';
 	$sortable_columns[ 'estimated_time' ] = 'estimated_time';
+	$sortable_columns[ 'project' ] = 'project';
 
 	return $sortable_columns;
 	
@@ -187,11 +189,28 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 
 			$estimated_time = get_post_meta( $post_id, 'estimated_time', true );
 			$pod = pods('mg_task',$z_id = null, true);
-			$pod->fields['estimated_time'] = 'hidden';
+			$pod->fields['estimated_time']['type'] = 'hidden';
 			$field = $pod->fields['estimated_time'];
+
+			if (!is_int($estimated_time)){
+				$estimated_time = convert_estimated_time_to_minutes($estimated_time);
+			}
+
 			$pod_field = PodsForm::field("estimated_time",(float)round($estimated_time / 60 , 2) . 'h','hidden',$field,$pod,$pod->id());
 
 			echo '<div id="estimated_time-' . $post_id . '" class="value"><span class="editable">' .(float)round($estimated_time / 60 , 2) . 'h'.'</span>'. $pod_field . '<span class="save-options"><span class="dashicons dashicons-yes"></span> <span class="dashicons dashicons-no"></span></span></div>';
+			break;
+
+		case 'project':
+
+			$project = get_post_meta( $post_id, 'project', true );
+
+			if ($project === false || empty($project)){
+				$project['ID'] = $post_id;
+				$project['post_title'] = 'No Associated<br>Project';
+			}
+
+			echo '<div id="project-' . $project['ID'] . '" >'. $project['post_title'] .'</div>';
 			break;
 
 	}
@@ -246,6 +265,38 @@ function manage_wp_posts_be_qe_pre_get_posts( $query ) {
 				 */
 				$query->set( 'orderby', 'meta_value' );
 				
+				break;
+
+			case 'priority':
+
+				// set our query's meta_key, which is used for custom fields
+				$query->set( 'meta_key', 'priority' );
+
+				/**
+				 * Tell the query to order by our custom field/meta_key's
+				 * value, in this case: PG, PG-13, R, etc.
+				 *
+				 * If your meta value are numbers, change
+				 * 'meta_value' to 'meta_value_num'.
+				 */
+				$query->set( 'orderby', 'meta_value' );
+
+				break;
+
+			case 'project':
+
+				// set our query's meta_key, which is used for custom fields
+				$query->set( 'meta_key', 'project' );
+
+				/**
+				 * Tell the query to order by our custom field/meta_key's
+				 * value, in this case: PG, PG-13, R, etc.
+				 *
+				 * If your meta value are numbers, change
+				 * 'meta_value' to 'meta_value_num'.
+				 */
+				$query->set( 'orderby', 'meta_value' );
+
 				break;
 
 			case 'estimated_time':
@@ -358,6 +409,7 @@ function manage_wp_posts_be_qe_posts_clauses( $pieces, $query ) {
  * for the fieldset and 'inline-edit-col' for the div. I recommend studying the WordPress
  * bulk and quick edit HTML to see the best way to layout your custom fields.
  */
+
 add_action( 'bulk_edit_custom_box', 'manage_wp_posts_be_qe_bulk_quick_edit_custom_box', 10, 2 );
 add_action( 'quick_edit_custom_box', 'manage_wp_posts_be_qe_bulk_quick_edit_custom_box', 10, 2 );
 function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_type ) {
@@ -369,7 +421,7 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 		case 'mg_task':
 		
 			switch( $column_name ) {
-			
+
 				case 'issue_type':
 
 					$issue_type = get_post_meta( $post_id, 'issue_type', true );
@@ -385,8 +437,7 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 									<?php echo $pod_field; ?>
 								</span>
 							</label>
-						</div>
-					</fieldset><?php
+						<?php
 					break;
 					
 				case 'priority':
@@ -396,16 +447,14 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 					$field = $pod->fields['priority'];
 					$pod_field = PodsForm::field("priority",$priority,'pick',$field,$pod,$pod->id());
 
-					?><fieldset class="inline-edit-col-left">
-						<div class="inline-edit-col">
+					?>
 							<label>
 								<span class="title">Priority</span>
 								<span class="input-text-wrap">
 									<?php echo $pod_field; ?>
 								</span>
 							</label>
-						</div>
-					</fieldset><?php
+						<?php
 					break;
 
 				case 'estimated_time':
@@ -413,22 +462,55 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 					$estimated_time = get_post_meta( $post_id, 'estimated_time', true );
 					$pod = pods('mg_task',$z_id = null, true);
 					$field = $pod->fields['estimated_time'];
-					$pod_field = PodsForm::field("estimated_time", (float)round($estimated_time / 60, 2),'text',$field,$pod,$pod->id());
+					$pod_field = PodsForm::field("estimated_time", $estimated_time,'text',$field,$pod,$pod->id());
 
-					?><fieldset class="inline-edit-col-left">
-					<div class="inline-edit-col">
+					?>
 						<label>
 							<span class="title">Estimated Time</span>
 								<span class="input-text-wrap">
 									<?php echo $pod_field; ?>
 								</span>
 						</label>
+					<?php
+					break;
+
+				case 'project':
+
+					$project = get_post_meta( $post_id, 'project', true );
+					$pod = pods('mg_task');
+					$field = $pod->fields['project'];
+					$field['options']['pick_format_style'] = 'dropdown';
+					$field['options']['pick_format_single'] = 'dropdown';
+					$pod_field = PodsForm::field("project",$project['ID'],'pick',$field,$pod,$pod->id());
+
+					?>
+						<label>
+							<span class="title">Project</span>
+								<span class="input-text-wrap">
+									<?php echo $pod_field; ?>
+								</span>
+						</label>
+					</div>
+					</fieldset><?php
+					$invoice = get_post_meta( $post_id, 'add_line_item_to_estimate', true );
+					$invoice_field = $pod->fields['add_line_item_to_estimate'];
+					//$field['options']['pick_format_style'] = 'dropdown';
+					//$field['options']['pick_format_single'] = 'dropdown';
+					$pod_field = PodsForm::field("add_line_item_to_estimate",$invoice,'pick',$invoice_field,$pod,$pod->id());
+
+					?><fieldset class="inline-edit-col-left">
+					<div class="inline-edit-col">
+						<label>
+							<span class="title">Invoices</span>
+					<span class="input-text-wrap">
+						<?php echo $pod_field; ?>
+					</span>
+						</label>
 					</div>
 					</fieldset><?php
 					break;
 			}
-			
-			break;
+						break;
 			
 	}
 	
@@ -493,29 +575,34 @@ function manage_wp_posts_be_qe_save_post( $post_id, $post ) {
 	// dont save for revisions
 	if ( isset( $post->post_type ) && $post->post_type == 'revision' )
 		return $post_id;
-		
-	switch( $post->post_type ) {
-	
-		case 'mg_task':
-		
-			/**
-			 * Because this action is run in several places, checking for the array key
-			 * keeps WordPress from editing data that wasn't in the form, i.e. if you had
-			 * this post meta on your "Quick Edit" but didn't have it on the "Edit Post" screen.
-			 */
-			$custom_fields = array( 'issue_type', 'priority', 'estimated_time' );
-			
-			foreach( $custom_fields as $field ) {
-			
-				if ( array_key_exists( $field, $_POST ) )
-					update_post_meta( $post_id, $field, $_POST[ $field ] );
-					
+
+	if ($post->post_type === 'mg_task'){
+
+		/**
+		 * Because this action is run in several places, checking for the array key
+		 * keeps WordPress from editing data that wasn't in the form, i.e. if you had
+		 * this post meta on your "Quick Edit" but didn't have it on the "Edit Post" screen.
+		 */
+		$custom_fields = array( 'issue_type', 'priority', 'estimated_time' );
+
+		foreach( $custom_fields as $field ) {
+
+			if ( array_key_exists( $field, $_POST ) ){
+				update_post_meta( $post_id, $field, $_POST[ $field ] );
 			}
-				
-			break;
-			
+
+			if ($field == 'project'){
+				$pod = pods('mg_task',$post_id, true);
+
+				$data = array(
+					'project' => $_POST[ $field ],
+				);
+
+				$pod->save($data);
+
+			}
+		}
 	}
-	
 }
 
 /**
@@ -536,7 +623,7 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
 	if ( ! empty( $post_ids ) && is_array( $post_ids ) ) {
 	
 		// get the custom fields
-		$custom_fields = array( 'issue_type', 'priority', 'estimated_time' );
+		$custom_fields = array( 'issue_type', 'priority', 'estimated_time', 'project' );
 		
 		foreach( $custom_fields as $field ) {
 			
@@ -546,10 +633,18 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
 				// update for each post ID
 				foreach( $post_ids as $post_id ) {
 					update_post_meta( $post_id, $field, $_POST[ $field ] );
+					if ($field == 'project'){
+						$pod = pods('mg_task',$post_id, true);
+
+						$data = array(
+								'project' => $_POST[ $field ],
+						);
+
+						$pod->save($data);
+
+					}
 				}
-				
 			}
-			
 		}
 		
 	}
@@ -559,13 +654,14 @@ add_action( 'wp_ajax_inline_edit_mg_task_meta', 'inline_edit_mg_task_meta',9999 
 function inline_edit_mg_task_meta() {
 
 	$response = false;
+	$new_data = '';
 
 	// we need the post IDs
 	$post_id = ( isset( $_POST[ 'post_ID' ] ) && !empty( $_POST[ 'post_ID' ] ) ) ? $_POST[ 'post_ID' ] : NULL;
 
 	// if we have post IDs
 	if ( ! empty( $post_id ) && is_numeric( $post_id ) ) {
-		if ( ! empty( $_POST['referrer'] ) && ! empty( $_POST['referrer'] ) ) {
+		if ( ! empty( $_POST['referrer'] ) && $_POST['referrer'] !== 'quick_save' ) {
 
 			$field = str_replace('-','_',$_POST['referrer']);
 
@@ -574,25 +670,119 @@ function inline_edit_mg_task_meta() {
 
 				// update for each post ID
 					$old_value = get_post_meta($post_id, $field, true);
-					//$new_value = convert_estimated_time_to_minutes( $_POST[ $field ]);
-					$response = update_post_meta( $post_id, $field, $_POST[ $field ] );
+					$response = update_post_meta( $post_id, $field, $_POST[ $field ], $old_value );
 					$new_data = get_post_meta($post_id, $field, true);
 
 				if ($field === 'estimated_time' && $response === true){
 
+					if (!is_int($new_data)){
+						$new_data = convert_estimated_time_to_minutes($new_data);
+					}
+
 					$r = array(
 							'post_id' => (int)$post_id,
-							$field => convert_estimated_time_to_minutes($new_data)
+							$field => $new_data
 					);
 					$response = json_encode($r, JSON_FORCE_OBJECT);
 				}
 
 			}
-
 		}
-
+		elseif ($_POST['referrer'] == 'quick_save'){
+			$new_data = get_post_meta($post_id, 'estimated_time', true);
+			$r = array(
+					'post_id' => (int)$post_id,
+					'estimated_time' => (int)$new_data
+			);
+			$response = json_encode($r, JSON_FORCE_OBJECT);
+		}
 	}
 	exit($response);
 }
+
+function add_name_to_project_meta($output){
+	$output = get_the_title($output);
+	return $output;
+}
+add_filter('wp_dropdown_metas_labels', 'add_name_to_project_meta');
+
+
+add_action( 'restrict_manage_posts', 'admin_posts_filter_restrict_manage_posts_act_events' );
+/**
+ * Create a drop-down to filter posts by project
+ *
+ * @return void
+ */
+function admin_posts_filter_restrict_manage_posts_act_events(){
+
+	//If post_type isn't set, default to 'post'
+	global $typenow;
+	if ($typenow=='mg_task') {
+
+		global $wpdb;
+		$results = $wpdb->get_results("SELECT meta_value FROM `wp_postmeta` WHERE meta_key = 'project'");
+
+		//assemble an array of all cities, along with the # of occurrences of each
+		$values = array();
+		foreach($results as $result)
+		{
+
+			if(!isset($values[$result->meta_value]))
+				$values[$result->meta_value] = 1;
+			else
+				$values[$result->meta_value] = intval($values[$result->meta_value]) + 1;// an array like 'Victoria' => 1, 'Vancouver' => 5
+
+		}
+		?><select name="project"><option value="">All Projects</option>
+		<?php
+
+		$current_v = isset($_GET['project'])? $_GET['project']:'';
+		foreach ($values as $project => $num_occ) {
+			printf
+			(
+					'<option value="%s" %s="">%s</option>',
+					$project,
+					$project == $current_v? ' selected="selected"':'',
+					get_the_title($project).' ('.$num_occ.')'
+			);
+		}
+ ?>
+		</select>
+		<?php
+ }
+}
+
+add_filter( 'parse_query', 'posts_filter_act_events' );
+/**
+ * if submitted filter by post meta
+ *
+ *
+ * @return Void
+ */
+function posts_filter_act_events($query) {
+
+	global $pagenow;
+
+	$qv = &$query->query_vars;//grab a reference to manipulate directly
+	if( $pagenow=='edit.php' &&
+			'mg_task'==$_GET['post_type'])
+	{
+
+		/* If this drop-down has been affected, add a meta query to the query
+        *
+        */
+		if(!empty($_GET['project']))
+		{
+			$qv['meta_query'][] = array(
+					'field' => 'project',
+					'value' => $_GET['project'],
+					'compare' => '=');
+		}
+
+		/* more queries go here */
+
+	}
+}
+
 
 ?>

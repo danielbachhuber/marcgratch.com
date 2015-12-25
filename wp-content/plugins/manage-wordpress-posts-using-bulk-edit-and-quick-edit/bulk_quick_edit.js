@@ -1,6 +1,7 @@
 (function($) {
 
 	// we create a copy of the WP inline edit post function
+	var self = {};
 	var $wp_inline_edit = inlineEditPost.edit;
 	var $wp_inline_save = inlineEditPost.save;
 	var $the_list = $('#the-list');
@@ -21,7 +22,7 @@
 
 
 		if ( $post_id > 0 ) {
-		
+
 			// define the edit row
 			var $edit_row = $( '#edit-' + $post_id );
 			
@@ -37,6 +38,12 @@
 			// set the film rating
 			$edit_row.find( 'select[name="priority"]' ).find( 'option[value="'+$priority+'"]').prop('selected',true);
 
+			// get the project
+			var $project = $( '#project-' + $post_id).find(":selected").text();
+
+			// set the film rating
+			$edit_row.find( 'select[name="project"]' ).find( 'option[value="'+$project+'"]').prop('selected',true);
+
 			var $estimated_time = $( '#estimated_time-' + $post_id).find(".editable").text();
 
 			// set the estimated time
@@ -49,7 +56,13 @@
 
 	inlineEditPost.save = function( id, referrer ) {
 
-		$wp_inline_save.apply( this, arguments );
+		if( typeof referrer === 'undefined' ){
+			if ($(self.referrer).hasClass('save')){
+				referrer = 'quick_save';
+				$wp_inline_save.apply( this, arguments );
+				return false;
+			}
+		}
 
 		var params, fields, page = $('.post_status_page').val() || '';
 
@@ -58,7 +71,8 @@
 		}
 
 		var $issue_type = $( '#issue_type-' + id ).find(":selected").text();
-		var $priority = $( '#priority-' + id).find(":selected").text();
+		var $project = $( '#priority-' + id).find(":selected").text();
+		var $priority = $( '#project-' + id).find(":selected").text();
 		var $estimated_time = $( '#estimated_time-' + id).find('input[name="estimated_time"]').val();
 
 		$( 'table.widefat .spinner' ).addClass( 'is-active' );
@@ -71,6 +85,7 @@
 			post_status: page,
 			issue_type: $issue_type,
 			priority: $priority,
+			project: $project,
 			estimated_time: $estimated_time,
 			referrer: referrer
 		};
@@ -80,14 +95,14 @@
 
 		// make ajax request
 		$.post( ajaxurl, params )
-			.done(function( response ) {
-				var response = JSON.parse(response);
+			.done(function( r ) {
+				var response = JSON.parse( r );
 				$('table.widefat .spinner').removeClass('is-active');
 				$('.ac_results').hide();
-				if (response == 'undefined') {
+				if (typeof response === 'undefined') {
 					$('#edit-' + id + ' .inline-edit-save .error').html(inlineEditL10n.error).show();
 				}
-				else if ( response !== 1 && 'undefined' !== response.estimated_time ){
+				else if ( response !== 1 && 'undefined' !== typeof response.estimated_time ){
 					var currentField =  $('#estimated_time-'+ response.post_id).find('.editable'),
 						hours = +(response.estimated_time /60).toFixed(2) + 'h',
 						row = currentField.parents('td');
@@ -97,13 +112,21 @@
 						currentField.next('input').val(hours);
 					});
 				}
+			})
+			.fail(function(response){
+				console.log("failed with the following response: ");
+				console.log(response);
 			});
 		return false;
 	};
 
+	$(".inline-edit-save .save").on("click", function(){
+		self.referrer = this;
+	});
 
-	$( '#bulk_edit' ).on( 'click', function() {
-	
+
+	$( '#bulk_edit' ).on( 'click', function( id ) {
+
 		// define the bulk edit row
 		var $bulk_row = $( '#bulk-edit' );
 		
@@ -114,9 +137,30 @@
 		});
 
 		// get the custom fields
-		var $issue_type = $( '#issue_type-' + id ).find(":selected").text();
-		var $priority = $( '#priority-' + id).find(":selected").text();
-		var $estimated_time = $( '#estimated_time-' + id).find('input[name="estimated_time"]').val();
+		var $estimated_time = $bulk_row.find('input[name="estimated_time"]').val();
+		var $issue_type = $bulk_row.find('select[name="issue_type"]').val();
+		var $priority = $bulk_row.find('select[name="priority"]').val();
+		var $project = $bulk_row.find('select[name="project"]').val();
+		var data = {
+			action: 'manage_wp_posts_using_bulk_quick_save_bulk_edit', // this is the name of our WP AJAX function that we'll set up next
+			post_ids: $post_ids, // and these are the 2 parameters we're passing to our function
+		};
+
+		if ($estimated_time !== ''){
+			data['estimated_time'] = $estimated_time
+		}
+
+		if ($issue_type !== ''){
+			data['issue_type'] = $issue_type
+		}
+
+		if ($priority !== ''){
+			data['priority'] = $priority
+		}
+
+		if ($project !== ''){
+			data['project'] = $project
+		}
 
 		// save the data
 		$.ajax({
@@ -124,12 +168,7 @@
 			type: 'POST',
 			async: false,
 			cache: false,
-			data: {
-				action: 'manage_wp_posts_using_bulk_quick_save_bulk_edit', // this is the name of our WP AJAX function that we'll set up next
-				post_ids: $post_ids, // and these are the 2 parameters we're passing to our function
-				issue_type: $issue_type,
-				priority: $priority,
-				estimated_time: $estimated_time			}
+			data: data
 		});
 		
 	});
@@ -187,5 +226,12 @@
 
 		return inlineEditPost.save(this, 'estimated_time');
 	});
+
+	$("textarea[name='tax_input[fixversion]']").parents('label').remove();
+	$("#bulk-edit .inline-edit-col-right").removeClass('inline-edit-col-right').addClass('inline-edit-col-left');
+	$.each($("#bulk-edit select"), function(){
+		$(this).val("");
+	});
+	$("#bulk-edit").find("input[name='estimated_time']").val('');
 
 })(jQuery);

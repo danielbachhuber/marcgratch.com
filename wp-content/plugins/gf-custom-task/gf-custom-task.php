@@ -291,7 +291,7 @@ function update_rates_on_task_li_estimates($time_in_minutes, $estimates, $id){
 						'rate' => $new_rate,
 						'qty' => $quantity,
 						'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
-						'type' => '',
+						'type' => 'task',
 						'total' => $total,
 						'tax' => $percent_adjustment,
 				);
@@ -306,7 +306,7 @@ function update_rates_on_task_li_estimates($time_in_minutes, $estimates, $id){
 					'rate' => $new_rate,
 					'qty' => $quantity,
 					'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
-					'type' => '',
+					'type' => 'task',
 					'total' => $total,
 					'tax' => $percent_adjustment,
 			);
@@ -341,7 +341,7 @@ function update_rates_on_task_li_invoices($time_in_minutes, $invoices, $id){
 						'rate' => $new_rate,
 						'qty' => $quantity,
 						'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
-						'type' => '',
+						'type' => 'task',
 						'total' => $total,
 						'tax' => $percent_adjustment,
 				);
@@ -356,7 +356,7 @@ function update_rates_on_task_li_invoices($time_in_minutes, $invoices, $id){
 					'rate' => $new_rate,
 					'qty' => $quantity,
 					'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
-					'type' => '',
+					'type' => 'task',
 					'total' => $total,
 					'tax' => $percent_adjustment,
 			);
@@ -457,7 +457,7 @@ function set_post_content( $post_id, $entry, $form ) {
 					'rate' => $new_rate,
 					'qty' => $quantity,
 					'desc' => $description,
-					'type' => '',
+					'type' => 'task',
 					'total' => $total,
 					'tax' => $percent_adjustment,
 			);
@@ -482,7 +482,7 @@ function set_post_content( $post_id, $entry, $form ) {
 					'rate' => $new_rate,
 					'qty' => $quantity,
 					'desc' => $description,
-					'type' => '',
+					'type' => 'task',
 					'total' => $total,
 					'tax' => $percent_adjustment,
 			);
@@ -613,6 +613,22 @@ add_action( 'gform_enqueue_scripts_5', 'gf_cpt_frontend_scripts', 10, 2 );
 
 // define the pods_api_get_table_info_default_post_status callback
 function filter_pods_api_get_table_info_default_post_status( $array, $post_type, $info, $object_type, $object, $name, $pod, $field ) {
+	global $pagenow;
+	global $typenow;
+
+	if ($typenow !== 'mg_task' && $pagenow !== 'edit-mg_task'){
+		return $array;
+	}
+	else {
+		if(isset($field['name']) && ($field['name'] == 'add_line_item_to_invoice' || $field['name'] == 'add_line_item_to_estimate')) {
+			$array[] = 'temp';
+			$array[] = 'request';
+			$array[] = 'Pending';
+			$array[] = 'Scheduled';
+			$array[] = 'publish';
+		}
+	}
+
 	if (strpos($_SERVER["REQUEST_URI"],'/wp-admin/') !== false){
 		if (isset($_SERVER['HTTP_REFERER'])){
 			if(strpos($_SERVER["HTTP_REFERER"],'post.php')){
@@ -718,7 +734,7 @@ function update_invoice_line_item( $pieces, $invoices, $id ){
 							'rate' => $new_rate,
 							'qty' => $quantity,
 							'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
-							'type' => '',
+							'type' => 'task',
 							'total' => $total,
 							'tax' => $percent_adjustment,
 					);
@@ -733,7 +749,7 @@ function update_invoice_line_item( $pieces, $invoices, $id ){
 						'rate' => $new_rate,
 						'qty' => $quantity,
 						'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
-						'type' => '',
+						'type' => 'task',
 						'total' => $total,
 						'tax' => $percent_adjustment,
 				);
@@ -758,7 +774,7 @@ function add_invoice_line_item( $pieces, $invoices, $id ){
 				'rate' => $new_rate,
 				'qty' => $quantity,
 				'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
-				'type' => '',
+				'type' => 'task',
 				'total' => $total,
 				'tax' => $percent_adjustment,
 		);
@@ -809,7 +825,7 @@ function update_estimate_line_item( $pieces, $estimates, $id ){
 							'rate' => $new_rate,
 							'qty' => $quantity,
 							'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
-							'type' => '',
+							'type' => 'task',
 							'total' => $total,
 							'tax' => $percent_adjustment,
 					);
@@ -824,7 +840,7 @@ function update_estimate_line_item( $pieces, $estimates, $id ){
 						'rate' => $new_rate,
 						'qty' => $quantity,
 						'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
-						'type' => '',
+						'type' => 'task',
 						'total' => $total,
 						'tax' => $percent_adjustment,
 				);
@@ -849,7 +865,7 @@ function add_estimate_line_item( $pieces, $estimates, $id ){
 				'rate' => $new_rate,
 				'qty' => $quantity,
 				'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
-				'type' => '',
+				'type' => 'task',
 				'total' => $total,
 				'tax' => $percent_adjustment,
 		);
