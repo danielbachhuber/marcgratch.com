@@ -192,7 +192,7 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 			$pod->fields['estimated_time']['type'] = 'hidden';
 			$field = $pod->fields['estimated_time'];
 
-			if (!is_int($estimated_time)){
+			if (!is_numeric($estimated_time)){
 				$estimated_time = convert_estimated_time_to_minutes($estimated_time);
 			}
 
@@ -204,13 +204,43 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 		case 'project':
 
 			$project = get_post_meta( $post_id, 'project', true );
+            $invoices_meta = get_post_meta( $post_id, 'add_line_item_to_invoice', false );
+            $estimates_meta = get_post_meta( $post_id, 'add_line_item_to_estimate', false );
+            $invoices = array();
+            $estimates = array();
+            $available_fields = array(
+                'estimates' => $estimates_meta,
+                'invoices' => $invoices_meta
+            );
+
+            foreach ($available_fields as $type => $field){
+                if (!empty($field)){
+                    if (is_array($field)){
+                        foreach ($field as $f){
+                            if (!empty($f)){
+                                if (is_array($f) && isset($f['ID'])){
+                                    if ($type === 'estimates'){
+                                        $estimates[] = (int)$f['ID'];
+                                    }
+                                    else {
+                                        $invoices[] = (int)$f['ID'];
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
 
 			if ($project === false || empty($project)){
 				$project['ID'] = $post_id;
 				$project['post_title'] = 'No Associated<br>Project';
 			}
 
-			echo '<div id="project-' . $project['ID'] . '" >'. $project['post_title'] .'</div>';
+			echo '<div id="project-' . $post_id . '" data-project-id="'.$project['ID'].'">'. $project['post_title'] .'</div>';
+			echo '<span style="display:none;" id="estimates-' . $post_id . '" data-estimates-id="'.json_encode($estimates).'"></span>';
+			echo '<span style="display:none;" id="invoices-' . $post_id . '" data-invoices-id="'.json_encode($invoices).'"></span>';
 			break;
 
 	}
@@ -427,9 +457,9 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 					$issue_type = get_post_meta( $post_id, 'issue_type', true );
 					$pod = pods('mg_task',$z_id = null, true);
 					$field = $pod->fields['issue_type'];
-					$pod_field = PodsForm::field("issue_type",$issue_type,'pick',$field,$pod,$pod->id());
+					$pod_field = PodsForm::field("issue_type",$issue_type,'pick',$field,$pod,$pod->id()); ?>
 
-					?><fieldset class="inline-edit-col-left">
+					<fieldset class="inline-edit-col-left">
 						<div class="inline-edit-col">
 							<label>
 								<span class="title">Issue Type</span>
@@ -437,40 +467,40 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 									<?php echo $pod_field; ?>
 								</span>
 							</label>
-						<?php
-					break;
+                    <?php
+                    break;
 					
 				case 'priority':
 
 					$priority = get_post_meta( $post_id, 'priority', true );
 					$pod = pods('mg_task',$z_id = null, true);
 					$field = $pod->fields['priority'];
-					$pod_field = PodsForm::field("priority",$priority,'pick',$field,$pod,$pod->id());
+					$pod_field = PodsForm::field("priority",$priority,'pick',$field,$pod,$pod->id()); ?>
 
-					?>
-							<label>
-								<span class="title">Priority</span>
-								<span class="input-text-wrap">
-									<?php echo $pod_field; ?>
-								</span>
-							</label>
-						<?php
-					break;
+					<label>
+                        <span class="title">Priority</span>
+                        <span class="input-text-wrap">
+                            <?php echo $pod_field; ?>
+                        </span>
+                    </label>
+
+                    <?php
+                    break;
 
 				case 'estimated_time':
 
 					$estimated_time = get_post_meta( $post_id, 'estimated_time', true );
 					$pod = pods('mg_task',$z_id = null, true);
 					$field = $pod->fields['estimated_time'];
-					$pod_field = PodsForm::field("estimated_time", $estimated_time,'text',$field,$pod,$pod->id());
+					$pod_field = PodsForm::field("estimated_time", $estimated_time,'text',$field,$pod,$pod->id()); ?>
 
-					?>
-						<label>
-							<span class="title">Estimated Time</span>
-								<span class="input-text-wrap">
-									<?php echo $pod_field; ?>
-								</span>
-						</label>
+					<label>
+                        <span class="title">Estimated Time</span>
+                            <span class="input-text-wrap">
+                                <?php echo $pod_field; ?>
+                            </span>
+                    </label>
+
 					<?php
 					break;
 
@@ -481,37 +511,60 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 					$field = $pod->fields['project'];
 					$field['options']['pick_format_style'] = 'dropdown';
 					$field['options']['pick_format_single'] = 'dropdown';
-					$pod_field = PodsForm::field("project",$project['ID'],'pick',$field,$pod,$pod->id());
+					$pod_field = PodsForm::field("project",$project,'pick',$field,$pod,$pod->id()); ?>
 
+                            <label>
+                                <span class="title">Project</span>
+                                    <span class="input-text-wrap">
+                                        <?php echo $pod_field; ?>
+                                    </span>
+                            </label>
+                        </div>
+					</fieldset>
+
+					<?php
+					$estimates = get_post_meta( $post_id, 'add_line_item_to_estimate', false );
+					$invoice_field = $pod->fields['add_line_item_to_estimate'];
+					$estimate_ids = array();
+
+					if (!empty($estimates)){
+                        foreach ($estimates as $estimate){
+                            $estimate_ids[] = $estimate['ID'];
+                        }
+					}
+					$pod_field = PodsForm::field("add_line_item_to_estimate",$estimate_ids,'pick',$invoice_field,$pod,$pod->id());
 					?>
+
+					<fieldset class="inline-edit-col-left">
+					<div class="inline-edit-col">
 						<label>
-							<span class="title">Project</span>
-								<span class="input-text-wrap">
-									<?php echo $pod_field; ?>
-								</span>
+							<span class="title">Estimates</span>
+							<span class="input-text-wrap"><?php echo $pod_field; ?></span>
 						</label>
 					</div>
-					</fieldset><?php
-					$invoice = get_post_meta( $post_id, 'add_line_item_to_estimate', true );
-					$invoice_field = $pod->fields['add_line_item_to_estimate'];
-					//$field['options']['pick_format_style'] = 'dropdown';
-					//$field['options']['pick_format_single'] = 'dropdown';
-					$pod_field = PodsForm::field("add_line_item_to_estimate",$invoice,'pick',$invoice_field,$pod,$pod->id());
 
-					?><fieldset class="inline-edit-col-left">
+					<?php  $invoices = get_post_meta( $post_id, 'add_line_item_to_invoice', false );
+					$invoice_field = $pod->fields['add_line_item_to_invoice'];
+					$invoice_ids = array();
+
+					if (!empty($invoices)){
+                        foreach ($invoices as $invoice){
+                            $invoice_ids[] = $invoice['ID'];
+                        }
+					}
+					$pod_field = PodsForm::field("add_line_item_to_invoice",$invoice_ids,'pick',$invoice_field,$pod,$pod->id()); ?>
+
+					<fieldset class="inline-edit-col-left">
 					<div class="inline-edit-col">
 						<label>
 							<span class="title">Invoices</span>
-					<span class="input-text-wrap">
-						<?php echo $pod_field; ?>
-					</span>
+							<span class="input-text-wrap"><?php echo $pod_field; ?></span>
 						</label>
 					</div>
-					</fieldset><?php
-					break;
+					</fieldset>
+				<?php break;
 			}
-						break;
-			
+			break;
 	}
 	
 }
@@ -632,7 +685,9 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
 			
 				// update for each post ID
 				foreach( $post_ids as $post_id ) {
+
 					update_post_meta( $post_id, $field, $_POST[ $field ] );
+
 					if ($field == 'project'){
 						$pod = pods('mg_task',$post_id, true);
 
@@ -675,7 +730,7 @@ function inline_edit_mg_task_meta() {
 
 				if ($field === 'estimated_time' && $response === true){
 
-					if (!is_int($new_data)){
+					if (!is_numeric($new_data)){
 						$new_data = convert_estimated_time_to_minutes($new_data);
 					}
 

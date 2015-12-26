@@ -216,12 +216,15 @@ function populate_pods_dropdown( $form ) {
 
 function pods_modify_data_b4_submit($pieces, $is_new_item = null){
 	$current_field = $pieces['fields_active'];
+	$post_id = $pieces['params']->id;
 	if ( $pieces['pod']['name'] == 'mg_task' && in_array('estimated_time',$current_field) ) {
-		$post_id = $pieces['params']->id;
 		$current_val = $pieces['fields']['estimated_time']['value'];
 		$new_value = convert_estimated_time_to_minutes($current_val);
 		$pre_save_estimated_time = get_post_meta($post_id, 'estimated_time', true);
 		$pieces['fields']['estimated_time']['value'] = $new_value;
+		/**
+		 * Can we do without the below block?
+		 *
 		if ((float)$new_value !== (float)$pre_save_estimated_time) {
 			$add_line_item_to_estimate = get_post_meta($post_id, 'add_line_item_to_estimate', false);
 			$add_line_item_to_invoice = get_post_meta($post_id, 'add_line_item_to_invoice', false);
@@ -242,17 +245,16 @@ function pods_modify_data_b4_submit($pieces, $is_new_item = null){
 						update_rates_on_task_li_estimates($pieces['fields']['estimated_time']['value'], $estimates, $post_id);
 					}
 					if ($add_line_item_to_invoice && $add_line_item_to_invoice[0] !== false){
-						if (is_object($add_line_item_to_invoice[0]) || is_array($add_line_item_to_invoice[0])){
-							foreach ($add_line_item_to_invoice as $inv_li){
+						foreach ($add_line_item_to_invoice as $inv_li){
+							if (is_array($inv_li)){
 								$invoices[] = $inv_li['ID'];
 							}
-						} else {
-							foreach ($add_line_item_to_invoice as $inv_li){
+							elseif (is_object($inv_li)){
+								$invoices[] = $inv_li->ID;
+							}
+							else {
 								$invoices[] = $inv_li;
 							}
-						}
-						foreach ( $add_line_item_to_invoice as $inv_li ){
-							$invoices[] = $inv_li['ID'];
 						}
 						update_invoice_line_item($pieces, $invoices, $post_id);
 					}
@@ -260,9 +262,12 @@ function pods_modify_data_b4_submit($pieces, $is_new_item = null){
 				}
 			}
 		}
+		/**
+		 * Test if we can do without the above block?
+		 */
 	}
-	$_SESSION["prev_est_val"] = get_post_meta(get_the_ID(),'add_line_item_to_estimate',false);
-	$_SESSION["prev_inv_val"] = get_post_meta(get_the_ID(),'add_line_item_to_invoice',false);
+	$_SESSION["prev_est_val"] = get_post_meta($post_id,'add_line_item_to_estimate',false);
+	$_SESSION["prev_inv_val"] = get_post_meta($post_id,'add_line_item_to_invoice',false);
 	return $pieces;
 }
 add_filter( 'pods_api_pre_save_pod_item', 'pods_modify_data_b4_submit', 10, 2);
@@ -282,7 +287,11 @@ function update_rates_on_task_li_estimates($time_in_minutes, $estimates, $id){
 	foreach ($estimates as $estimate) {
 		$SI_Estimate = SI_Estimate::get_instance($estimate);
 		$line_items = $SI_Estimate->get_line_items();
+		$estimate_status = $SI_Estimate->get_status();
 
+		if ($estimate_status === 'approved'){
+			return;
+		}
 		$new_line_items_array = array();
 		foreach ($line_items as $li){
 			$fired = [null,null];
@@ -670,13 +679,15 @@ function filter_pods_form_ui_field_type_value( $value, $name, $options, $pod, $i
 add_filter( "pods_form_ui_field_text_value", 'filter_pods_form_ui_field_type_value', 10, 5 );
 
 function add_line_items_on_task_save($pieces, $is_new_item, $id ) {
-	if ( strpos($_SERVER["REQUEST_URI"],'/wp-admin/') !== false && strpos($_SERVER["HTTP_REFERER"],'post.php') && !empty($pieces['changed_fields'])){
-		$invoice_check = get_post_meta($id, 'add_line_item_to_invoice', false);
+	global $pagenow;
+	global $typenow;
+	if ( $pagenow == 'post.php' || $pagenow == 'admin-ajax.php' || $pagenow == 'edit.php' && !empty($pieces['changed_fields'])){
+		$invoice_check = maybe_get_pod_id(get_post_meta($id, 'add_line_item_to_invoice', false));
 		$post_save_invoice = array_values($invoice_check);
-		$estimate_check = get_post_meta($id, 'add_line_item_to_estimate', false);
+		$estimate_check = maybe_get_pod_id(get_post_meta($id, 'add_line_item_to_estimate', false));
 		$post_save_estimate = array_values($estimate_check);
-		$pre_save_invoice = isset($_SESSION['prev_inv_val']) && is_array($_SESSION['prev_inv_val']) && array_values($_SESSION['prev_inv_val']) ? $_SESSION['prev_inv_val'] : array();
-		$pre_save_estimate = isset($_SESSION['prev_est_val']) && is_array($_SESSION['prev_est_val']) && array_values($_SESSION['prev_est_val']) ? $_SESSION['prev_est_val'] : array();
+		$pre_save_invoice = isset($_SESSION['prev_inv_val']) && is_array($_SESSION['prev_inv_val']) && array_values($_SESSION['prev_inv_val']) ? maybe_get_pod_id($_SESSION['prev_inv_val']) : array();
+		$pre_save_estimate = isset($_SESSION['prev_est_val']) && is_array($_SESSION['prev_est_val']) && array_values($_SESSION['prev_est_val']) ? maybe_get_pod_id($_SESSION['prev_est_val']) : array();
 		$changed_fields = $pieces['changed_fields'];
 		$line_item_chnages = invoice_or_estimate_update( $pre_save_invoice, $post_save_invoice, $pre_save_estimate, $post_save_estimate, $changed_fields );
 
@@ -710,17 +721,66 @@ function add_line_items_on_task_save($pieces, $is_new_item, $id ) {
 	}
 }
 
-function update_invoice_line_item( $pieces, $invoices, $id ){
-	$rate = $pieces['fields']['rate']['value'];
-	$description = $pieces['fields']['description']['value'];
-	$quantity = $pieces['fields']['quantity']['value'];
-	$percent_adjustment = $pieces['fields']['percent_adjustment']['value'];
-	$new_rate = ((float)$pieces['fields']['estimated_time']['value'] / 60) * $rate;
-	$total = (float)round(($new_rate * $quantity) - ($new_rate * $quantity) * ( $percent_adjustment / 100 ),2);
+function maybe_get_pod_id( $maybe_object_array_string ){
 
-	if (!isset($invoices) || empty($invoices)){
+	$count = count($maybe_object_array_string);
+	$output = array();
+
+	if ($count > 1){
+		foreach ($maybe_object_array_string as $item){
+			if (is_array($item)){
+				$output[] = $item['ID'];
+			}
+			elseif (is_object($item)){
+				$output[] = $item->ID;
+			}
+			else {
+				$output[] = $item;
+			}
+		}
+	} else {
+		if (is_array($maybe_object_array_string)){
+			foreach ($maybe_object_array_string as $item){
+				if (is_array($item)){
+					$output[] = $item['ID'];
+				}
+				elseif (is_object($item)){
+					$output[] = $item->ID;
+				}
+				else {
+					$output[] = $item;
+				}
+			}
+		}
+		elseif (is_object($maybe_object_array_string)){
+			$output[] = $maybe_object_array_string->ID;
+		}
+		else {
+			$output[] = $maybe_object_array_string;
+		}
+	}
+	return $output;
+}
+
+function update_invoice_line_item( $pieces, $invoices, $id ){
+
+	if (!isset($invoices) || empty($invoices) || $invoices === false || $invoices[0] === false || $invoices[0] === null){
 		return;
 	}
+
+	$fields = array('rate','description','quantity','percent_adjustment','estimated_time');
+	$populated_fields = array();
+
+	foreach ($fields as $field){
+		if (!isset($pieces['fields'][$field]['value']) || isset($pieces['fields'][$field]['value']) && $pieces['fields'][$field]['value'] == null) {
+			$populated_fields[$field] = get_post_meta($id, $field, true);
+		} else {
+			$populated_fields[$field] = $pieces['fields'][$field]['value'];
+		}
+	}
+
+	$new_rate = ((float)$populated_fields['estimated_time'] / 60) * (float)$populated_fields['rate'];
+	$total = (float)round(($new_rate * $populated_fields['quantity']) - ($new_rate * $populated_fields['quantity']) * ( $populated_fields['percent_adjustment'] / 100 ),2);
 
 	foreach ($invoices as $invoice) {
 		$SI_Invoice = SI_Invoice::get_instance($invoice);
@@ -728,32 +788,28 @@ function update_invoice_line_item( $pieces, $invoices, $id ){
 
 			$new_line_items_array = array();
 			foreach ($line_items as $li){
-				$fired = [null,null];
-				if( strpos($li['desc'], 'task: '.$id) !== false  && $fired[1] === null){
+				if( strpos($li['desc'], 'task: '.$id) !== false ){
 					$new_line_items_array[] = array(
 							'rate' => $new_rate,
-							'qty' => $quantity,
-							'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
+							'qty' => $populated_fields['quantity'],
+							'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $populated_fields['description'],
 							'type' => 'task',
 							'total' => $total,
-							'tax' => $percent_adjustment,
+							'tax' => $populated_fields['percent_adjustment'],
 					);
-					$fired = [true,true];
 				} else {
 					$new_line_items_array[] = $li;
-					$fired[0] = false;
 				}
 			}
-			if (isset($fired) && $fired[0] !== true){
+			if (isset($line_items) && empty($line_items)){
 				$new_line_items_array[] = array(
 						'rate' => $new_rate,
-						'qty' => $quantity,
-						'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
+						'qty' => $populated_fields['quantity'],
+						'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $populated_fields['description'],
 						'type' => 'task',
 						'total' => $total,
-						'tax' => $percent_adjustment,
+						'tax' => $populated_fields['percent_adjustment'],
 				);
-				$fired = [true,true];
 			}
 		$SI_Invoice->set_line_items( $new_line_items_array );
 		$SI_Invoice->set_calculated_total();
@@ -761,22 +817,35 @@ function update_invoice_line_item( $pieces, $invoices, $id ){
 }
 
 function add_invoice_line_item( $pieces, $invoices, $id ){
-	$rate = $pieces['fields']['rate']['value'];
-	$description = $pieces['fields']['description']['value'];
-	$quantity = $pieces['fields']['quantity']['value'];
-	$percent_adjustment = $pieces['fields']['percent_adjustment']['value'];
-	$new_rate = ((float)$pieces['fields']['estimated_time']['value'] / 60) * $rate;
-	$total = (float)round(($new_rate * $quantity) - ($new_rate * $quantity) * ( $percent_adjustment / 100 ),2);
+
+	if (!isset($invoices) || empty($invoices) || $invoices === false || $invoices[0] === false || $invoices[0] === null){
+		return;
+	}
+
+	$fields = array('rate','description','quantity','percent_adjustment','estimated_time');
+	$populated_fields = array();
+
+	foreach ($fields as $field){
+		if (!isset($pieces['fields'][$field]['value']) || isset($pieces['fields'][$field]['value']) && $pieces['fields'][$field]['value'] == null) {
+			$populated_fields[$field] = get_post_meta($id, $field, true);
+		} else {
+			$populated_fields[$field] = $pieces['fields'][$field]['value'];
+		}
+	}
+
+	$new_rate = ((float)$populated_fields['estimated_time'] / 60) * (float)$populated_fields['rate'];
+	$total = (float)round(($new_rate * $populated_fields['quantity']) - ($new_rate * $populated_fields['quantity']) * ( $populated_fields['percent_adjustment'] / 100 ),2);
+
 	foreach ($invoices as $invoice) {
 		$SI_Invoice = SI_Invoice::get_instance($invoice);
 		$line_items = $SI_Invoice->get_line_items();
 		$line_items[] = array(
 				'rate' => $new_rate,
-				'qty' => $quantity,
-				'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
+				'qty' => $populated_fields['quantity'],
+				'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $populated_fields['description'],
 				'type' => 'task',
 				'total' => $total,
-				'tax' => $percent_adjustment,
+				'tax' => $populated_fields['percent_adjustment'],
 		);
 		$SI_Invoice->set_line_items($line_items);
 		$SI_Invoice->set_calculated_total();
@@ -802,49 +871,57 @@ function remove_invoice_line_items( $invoices, $id ){
 }
 
 function update_estimate_line_item( $pieces, $estimates, $id ){
-	$rate = $pieces['fields']['rate']['value'];
-	$description = $pieces['fields']['description']['value'];
-	$quantity = $pieces['fields']['quantity']['value'];
-	$percent_adjustment = $pieces['fields']['percent_adjustment']['value'];
-	$new_rate = ((float)$pieces['fields']['estimated_time']['value'] / 60) * $rate;
-	$total = (float)round(($new_rate * $quantity) - ($new_rate * $quantity) * ( $percent_adjustment / 100 ),2);
 
-	if (!isset($estimates) || empty($estimates)){
+	if (!isset($estimates) || empty($estimates) || $estimates === false || $estimates[0] === false || $estimates[0] === null){
 		return;
 	}
+
+	$fields = array('rate','description','quantity','percent_adjustment','estimated_time');
+	$populated_fields = array();
+
+	foreach ($fields as $field){
+		if (!isset($pieces['fields'][$field]['value']) || isset($pieces['fields'][$field]['value']) && $pieces['fields'][$field]['value'] == null) {
+			$populated_fields[$field] = get_post_meta($id, $field, true);
+		} else {
+			$populated_fields[$field] = $pieces['fields'][$field]['value'];
+		}
+	}
+	$new_rate = ((float)$populated_fields['estimated_time'] / 60) * (float)$populated_fields['rate'];
+	$total = (float)round(($new_rate * $populated_fields['quantity']) - ($new_rate * $populated_fields['quantity']) * ( $populated_fields['percent_adjustment'] / 100 ),2);
 
 	foreach ($estimates as $estimate) {
 		$SI_Estimate = SI_Estimate::get_instance($estimate);
 		$line_items = $SI_Estimate->get_line_items();
+		$estimate_status = $SI_Estimate->get_status();
+
+		if ($estimate_status === 'approved'){
+			return;
+		}
 
 			$new_line_items_array = array();
 			foreach ($line_items as $li){
-				$fired = [null,null];
-				if( strpos($li['desc'], 'task: '.$id) !== false  && $fired[1] === null){
+				if( strpos($li['desc'], 'task: '.$id) !== false ){
 					$new_line_items_array[] = array(
 							'rate' => $new_rate,
-							'qty' => $quantity,
-							'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
+							'qty' => $populated_fields['quantity'],
+							'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $populated_fields['description'],
 							'type' => 'task',
 							'total' => $total,
-							'tax' => $percent_adjustment,
+							'tax' => $populated_fields['percent_adjustment'],
 					);
-					$fired = [true,true];
 				} else {
 					$new_line_items_array[] = $li;
-					$fired[0] = false;
 				}
 			}
-			if (isset($fired) && $fired[0] !== true){
+			if (isset($line_items) && empty($line_items)){
 				$new_line_items_array[] = array(
 						'rate' => $new_rate,
-						'qty' => $quantity,
-						'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
+						'qty' => $populated_fields['quantity'],
+						'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $populated_fields['description'],
 						'type' => 'task',
 						'total' => $total,
-						'tax' => $percent_adjustment,
+						'tax' => $populated_fields['percent_adjustment'],
 				);
-				$fired = [true,true];
 			}
 		$SI_Estimate->set_line_items( $new_line_items_array );
 		$SI_Estimate->set_calculated_total();
@@ -852,22 +929,34 @@ function update_estimate_line_item( $pieces, $estimates, $id ){
 }
 
 function add_estimate_line_item( $pieces, $estimates, $id ){
-	$rate = $pieces['fields']['rate']['value'];
-	$description = $pieces['fields']['description']['value'];
-	$quantity = $pieces['fields']['quantity']['value'];
-	$percent_adjustment = $pieces['fields']['percent_adjustment']['value'];
-	$new_rate = ((float)$pieces['fields']['estimated_time']['value'] / 60) * $rate;
-	$total = (float)round(($new_rate * $quantity) - ($new_rate * $quantity) * ( $percent_adjustment / 100 ),2);
+
+	if (!isset($estimates) || empty($estimates) || $estimates === false || $estimates[0] === false || $estimates[0] === null){
+		return;
+	}
+
+	$fields = array('rate','description','quantity','percent_adjustment','estimated_time');
+	$populated_fields = array();
+
+	foreach ($fields as $field){
+		if (!isset($pieces['fields'][$field]['value']) || isset($pieces['fields'][$field]['value']) && $pieces['fields'][$field]['value'] == null) {
+			$populated_fields[$field] = get_post_meta($id, $field, true);
+		} else {
+			$populated_fields[$field] = $pieces['fields'][$field]['value'];
+		}
+	}
+	$new_rate = ((float)$populated_fields['estimated_time'] / 60) * (float)$populated_fields['rate'];
+	$total = (float)round(($new_rate * $populated_fields['quantity']) - ($new_rate * $populated_fields['quantity']) * ( $populated_fields['percent_adjustment'] / 100 ),2);
+
 	foreach ($estimates as $estimate) {
 		$SI_Estimate = SI_Estimate::get_instance($estimate);
 		$line_items = $SI_Estimate->get_line_items();
 		$line_items[] = array(
 				'rate' => $new_rate,
-				'qty' => $quantity,
-				'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $description,
+				'qty' => $populated_fields['quantity'],
+				'desc' => 'task: ' . $id . ' <strong>' . get_the_title($id) . '</strong><br/>' . $populated_fields['description'],
 				'type' => 'task',
 				'total' => $total,
-				'tax' => $percent_adjustment,
+				'tax' => $populated_fields['percent_adjustment'],
 		);
 		$SI_Estimate->set_line_items($line_items);
 		$SI_Estimate->set_calculated_total();
@@ -960,3 +1049,19 @@ add_action('pods_api_post_save_pod_item', 'add_line_items_on_task_save', 10, 3);
 
 // define the pods_api_save_pod_item_track_changed_fields_<pod> callback
 add_filter( 'pods_api_save_pod_item_track_changed_fields_mg_task', '__return_true' );
+
+function auto_send_invoice_after_creation( $invoice ) {
+
+	$args = array(
+		'post_type' => 'mg_task',
+		'meta_key'	=> 'add_line_item_to_estimate',
+		'meat_value'=> $_POST['id']
+	);
+
+	$tasks = get_posts($args);
+
+	foreach ($tasks as $task){
+		update_post_meta($task->ID, 'add_line_item_to_invoice', $invoice->get_id());
+	}
+}
+add_action( 'si_create_invoice_on_est_acceptance', 'auto_send_invoice_after_creation' );

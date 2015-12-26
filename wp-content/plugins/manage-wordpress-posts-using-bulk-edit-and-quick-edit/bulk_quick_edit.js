@@ -39,10 +39,36 @@
 			$edit_row.find( 'select[name="priority"]' ).find( 'option[value="'+$priority+'"]').prop('selected',true);
 
 			// get the project
-			var $project = $( '#project-' + $post_id).find(":selected").text();
+			var $project = $( '#project-' + $post_id).data("project-id");
 
 			// set the film rating
 			$edit_row.find( 'select[name="project"]' ).find( 'option[value="'+$project+'"]').prop('selected',true);
+
+			// get the Estimtes
+			var $estimates = $( '#estimates-' + $post_id).data('estimates-id');
+
+			console.log($estimates);
+
+			// set the film rating
+			$.each( $edit_row.find( 'input[data-name-clean="add-line-item-to-estimate"]' ), function(i,v){
+				var val = $(this).val();
+				console.log(val);
+				if($.inArray(val, $estimates) !== -1){
+					$(this).prop('checked',true);
+				}
+
+			});
+
+			// get the Invoices
+			var $invoices = $( '#invoices-' + $post_id).data('invoices-id');
+
+			// set the film rating
+			$.each( $edit_row.find( 'input[data-name-clean="add-line-item-to-invoice"]' ), function(i,v){
+				if($.inArray($(this).val(), $invoices) !== -1){
+					$(this).prop('checked',true);
+				}
+
+			});
 
 			var $estimated_time = $( '#estimated_time-' + $post_id).find(".editable").text();
 
@@ -71,8 +97,8 @@
 		}
 
 		var $issue_type = $( '#issue_type-' + id ).find(":selected").text();
-		var $project = $( '#priority-' + id).find(":selected").text();
-		var $priority = $( '#project-' + id).find(":selected").text();
+		var $project = $( '#project-' + id).find(":selected").text();
+		var $priority = $( '#priority-' + id).find(":selected").text();
 		var $estimated_time = $( '#estimated_time-' + id).find('input[name="estimated_time"]').val();
 
 		$( 'table.widefat .spinner' ).addClass( 'is-active' );
