@@ -26,35 +26,33 @@
 			// define the edit row
 			var $edit_row = $( '#edit-' + $post_id );
 			
-			// get the release date
+			// get the issue type
 			var $issue_type = $( '#issue_type-' + $post_id ).find(":selected").text();
 			
-			// set the release date
+			// set the issue type
 			$edit_row.find( 'select[name="issue_type"]' ).find( 'option[value="'+$issue_type+'"]').prop('selected',true);
 			
-			// get the release date
+			// get the priority
 			var $priority = $( '#priority-' + $post_id).find(":selected").text();
 
-			// set the film rating
+			// set the priority
 			$edit_row.find( 'select[name="priority"]' ).find( 'option[value="'+$priority+'"]').prop('selected',true);
 
 			// get the project
 			var $project = $( '#project-' + $post_id).data("project-id");
 
-			// set the film rating
+			// set the project
 			$edit_row.find( 'select[name="project"]' ).find( 'option[value="'+$project+'"]').prop('selected',true);
 
-			// get the Estimtes
+			// get the Estimates
 			var $estimates = $( '#estimates-' + $post_id).data('estimates-id');
 
-			console.log($estimates);
-
-			// set the film rating
+			// set the Estimates
 			$.each( $edit_row.find( 'input[data-name-clean="add-line-item-to-estimate"]' ), function(i,v){
-				var val = $(this).val();
-				console.log(val);
-				if($.inArray(val, $estimates) !== -1){
-					$(this).prop('checked',true);
+				if($.inArray(parseInt($(this).val()), $estimates) !== -1){
+					$(this).prop('checked','checked');
+				} else {
+					$(this).prop('checked','');
 				}
 
 			});
@@ -62,9 +60,9 @@
 			// get the Invoices
 			var $invoices = $( '#invoices-' + $post_id).data('invoices-id');
 
-			// set the film rating
+			// set the Invoices
 			$.each( $edit_row.find( 'input[data-name-clean="add-line-item-to-invoice"]' ), function(i,v){
-				if($.inArray($(this).val(), $invoices) !== -1){
+				if($.inArray(parseInt($(this).val()), $invoices) !== -1){
 					$(this).prop('checked',true);
 				}
 
@@ -85,6 +83,80 @@
 		if( typeof referrer === 'undefined' ){
 			if ($(self.referrer).hasClass('save')){
 				referrer = 'quick_save';
+
+				var $post_id = 0;
+				if ( typeof( id ) == 'object' )
+					$post_id = parseInt( this.getId( id ) );
+
+				var $edit_row = $( '#edit-' + $post_id );
+
+				var estimates_removal_input =
+						'<fieldset class="inline-edit-col-left">' +
+						'<div class="inline-edit-col">' +
+						'<label>' +
+						'<span class="input-text-wrap">' +
+						'<input name="estimates_to_remove" data-name-clean="estimates-to-remove" data-label="Estimates to Remove" id="estimates-to-remove" class="pods-form-ui-field-type-text" type="hidden" value="" tabindex="2" maxlength="255" />' +
+						'</span>' +
+						'</label>' +
+						'</div>' +
+						'</fieldset>';
+
+				$edit_row.find("fieldset").last().after(estimates_removal_input);
+
+				var $estimates = $( '#estimates-' + $post_id).data('estimates-id');
+				var $estimates_not_checked = [];
+				var $estimates_to_remove = [];
+
+				// set the Estimates
+				$.each( $edit_row.find( 'input[data-name-clean="add-line-item-to-estimate"]' ), function(i,v){
+					if ($(this).prop("checked") == false){
+						$estimates_not_checked.push(parseInt($(this).val()));
+					}
+				});
+
+
+				$.grep($estimates_not_checked, function(el) {
+					if ($.inArray(el, $estimates) !== -1){
+						$estimates_to_remove.push(el);
+					}
+				});
+
+				$("input[name='estimates_to_remove']").val($estimates_to_remove);
+
+
+				// get the Invoices
+				var invoices_removal_input =
+						'<fieldset class="inline-edit-col-left">' +
+						'<div class="inline-edit-col">' +
+						'<label>' +
+						'<span class="input-text-wrap">' +
+						'<input name="invoices_to_remove" data-name-clean="invoices-to-remove" data-label="Invoices to Remove" id="invoices-to-remove" class="pods-form-ui-field-type-text" type="hidden" value="" tabindex="2" maxlength="255" />' +
+						'</span>' +
+						'</label>' +
+						'</div>' +
+						'</fieldset>';
+
+				$edit_row.find("fieldset").last().after(invoices_removal_input);
+
+				var $invoices = $( '#invoices-' + $post_id).data('invoices-id');
+				var $invoices_not_checked = [];
+				var $invoices_to_remove = [];
+
+				// set the Estimates
+				$.each( $edit_row.find( 'input[data-name-clean="add-line-item-to-invoice"]' ), function(i,v){
+					if ($(this).prop("checked") == false){
+						$invoices_not_checked.push(parseInt($(this).val()));
+					}
+				});
+
+				$.grep($invoices_not_checked, function(el) {
+					if ($.inArray(el, $invoices) !== -1){
+						$invoices_to_remove.push(el);
+					}
+				});
+
+				$("input[name='invoices_to_remove']").val($invoices_to_remove);
+
 				$wp_inline_save.apply( this, arguments );
 				return false;
 			}
@@ -167,9 +239,29 @@
 		var $issue_type = $bulk_row.find('select[name="issue_type"]').val();
 		var $priority = $bulk_row.find('select[name="priority"]').val();
 		var $project = $bulk_row.find('select[name="project"]').val();
+		var $estimates = [];
+		var $invoices = [];
+		var $estimates_to_remove = [];
+		var $invoices_to_remove = [];
+		var $invoices_no_change = $bulk_row.find('#add_line_item_to_invoice').find('input[data-name-clean="dont-change-anything"]:checked').length;
+		var $estimates_no_change = $bulk_row.find('#add_line_item_to_estimate').find('input[data-name-clean="dont-change-anything"]:checked').length;
+
+		// get associated estimates
+		$.each( $bulk_row.find( 'input[data-name-clean="add-line-item-to-estimate"]:checked' ), function(){
+			var val = $(this).val();
+			$estimates.push(val);
+		});
+
+		// get associated invoices
+		$.each( $bulk_row.find( 'input[data-name-clean="add-line-item-to-invoice"]:checked' ), function(){
+			var val = $(this).val();
+			$invoices.push(val);
+		});
+
+
 		var data = {
 			action: 'manage_wp_posts_using_bulk_quick_save_bulk_edit', // this is the name of our WP AJAX function that we'll set up next
-			post_ids: $post_ids, // and these are the 2 parameters we're passing to our function
+			post_ids: $post_ids // and these are the 2 parameters we're passing to our function
 		};
 
 		if ($estimated_time !== ''){
@@ -186,6 +278,36 @@
 
 		if ($project !== ''){
 			data['project'] = $project
+		}
+
+		if ($invoices !== []){
+			data['add_line_item_to_invoice'] = $invoices
+		}
+
+		if ($estimates !== []){
+			data['add_line_item_to_estimate'] = $estimates
+		}
+
+		if ($invoices_no_change < 1){
+			$.each( $bulk_row.find( 'input[data-name-clean="add-line-item-to-invoice"]' ), function(){
+				var cb = this;
+				var val = $(cb).val();
+				if ($(cb).prop('checked') !== true && $(cb).prop('checked') !== 'checked'){
+					$invoices_to_remove.push(val);
+				}
+			});
+			data['invoices_to_remove'] = $invoices_to_remove;
+		}
+
+		if ($estimates_no_change < 1){
+			$.each( $bulk_row.find( 'input[data-name-clean="add-line-item-to-estimate"]' ), function(){
+				var cb = this;
+				var val = $(cb).val();
+				if ($(cb).prop('checked') !== true && $(cb).prop('checked') !== 'checked'){
+					$estimates_to_remove.push(val);
+				}
+			});
+			data['estimates_to_remove'] = $estimates_to_remove;
 		}
 
 		// save the data
@@ -259,5 +381,40 @@
 		$(this).val("");
 	});
 	$("#bulk-edit").find("input[name='estimated_time']").val('');
+	$.each($("#bulk-edit").find(".pods-pick-values.pods-pick-checkbox"),function(){
+		$(this).find("ul").prepend(
+				'<li>' +
+				'<div class="pods-field pods-boolean">' +
+				'<input name="dont_change_anything" data-name-clean="dont-change-anything" data-label="Don\'t Change Anything" id="pods-form-ui-do-nothing" class="pods-form-ui-field-type-pick" type="checkbox" tabindex="2" value="pi" checked="checked">' +
+				'<label class="pods-form-ui-label" for="dont_change_anything">' +
+				'Don\'t Change Anything' +
+				'</label>' +
+				'</div>' +
+				'</li>'
+		)
+	});
+	$.each($("#bulk-edit").find("input[data-name-clean='add-line-item-to-estimate']"), function(){
+		var cb = this;
+		$(cb).on('click',function( cb ){
+			$(cb.target).parents('ul').find('input[data-name-clean="dont-change-anything"]').prop('checked',false);
+		});
+		$(this).prop("checked",false);
+	});
+	$.each($("#bulk-edit").find("input[data-name-clean='add-line-item-to-invoice']"), function(){
+		var cb = this;
+		$(cb).on('click',function( cb ){
+			$(cb.target).parents('ul').find('input[data-name-clean="dont-change-anything"]').prop('checked',false);
+		});
+		$(this).prop("checked",false);
+	});
+	$('input[data-name-clean="dont-change-anything"]').on('click',function(){
+		$.each($("#bulk-edit").find("input[data-name-clean='add-line-item-to-estimate']"), function(){
+			$(this).prop("checked",false);
+		});
+		$.each($("#bulk-edit").find("input[data-name-clean='add-line-item-to-invoice']"), function(){
+			$(this).prop("checked",false);
+		});
+	});
+
 
 })(jQuery);

@@ -209,27 +209,21 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
             $invoices = array();
             $estimates = array();
             $available_fields = array(
-                'estimates' => $estimates_meta,
-                'invoices' => $invoices_meta
+                'estimates' => maybe_get_pod_id($estimates_meta),
+                'invoices' => maybe_get_pod_id($invoices_meta)
             );
 
-            foreach ($available_fields as $type => $field){
-                if (!empty($field)){
-                    if (is_array($field)){
-                        foreach ($field as $f){
-                            if (!empty($f)){
-                                if (is_array($f) && isset($f['ID'])){
-                                    if ($type === 'estimates'){
-                                        $estimates[] = (int)$f['ID'];
-                                    }
-                                    else {
-                                        $invoices[] = (int)$f['ID'];
-                                    }
-                                }
-                            }
+
+            foreach ($available_fields as $field => $array){
+                foreach ($array as $item){
+                    if (!empty($item)){
+                        if ($field === 'estimates'){
+                            $estimates[] = intval($item);
+                        }
+                        else {
+                            $invoices[] = intval($item);
                         }
                     }
-
                 }
             }
 
@@ -539,7 +533,7 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 					<div class="inline-edit-col">
 						<label>
 							<span class="title">Estimates</span>
-							<span class="input-text-wrap"><?php echo $pod_field; ?></span>
+							<span id="add_line_item_to_estimate" class="input-text-wrap"><?php echo $pod_field; ?></span>
 						</label>
 					</div>
 
@@ -558,7 +552,7 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 					<div class="inline-edit-col">
 						<label>
 							<span class="title">Invoices</span>
-							<span class="input-text-wrap"><?php echo $pod_field; ?></span>
+							<span id="add_line_item_to_invoice" class="input-text-wrap"><?php echo $pod_field; ?></span>
 						</label>
 					</div>
 					</fieldset>
@@ -613,6 +607,8 @@ function manage_wp_posts_be_qe_enqueue_admin_styles() {
 add_action( 'save_post', 'manage_wp_posts_be_qe_save_post', 10, 2 );
 function manage_wp_posts_be_qe_save_post( $post_id, $post ) {
 
+    global $pagenow;
+
 	// pointless if $_POST is empty (this happens on bulk edit)
 	if ( empty( $_POST ) )
 		return $post_id;
@@ -629,6 +625,9 @@ function manage_wp_posts_be_qe_save_post( $post_id, $post ) {
 	if ( isset( $post->post_type ) && $post->post_type == 'revision' )
 		return $post_id;
 
+    if ($pagenow !== 'edit.php' && $pagenow !== 'admin-ajax.php')
+        return $post_id;
+
 	if ($post->post_type === 'mg_task'){
 
 		/**
@@ -636,26 +635,219 @@ function manage_wp_posts_be_qe_save_post( $post_id, $post ) {
 		 * keeps WordPress from editing data that wasn't in the form, i.e. if you had
 		 * this post meta on your "Quick Edit" but didn't have it on the "Edit Post" screen.
 		 */
-		$custom_fields = array( 'issue_type', 'priority', 'estimated_time' );
+		$custom_fields = array( 'issue_type', 'priority', 'estimated_time', 'project', 'invoices_to_remove', 'estimates_to_remove',  'add_line_item_to_estimate', 'add_line_item_to_invoice' );
+        $pod = pods('mg_task',$post_id, true);
 
 		foreach( $custom_fields as $field ) {
 
-			if ( array_key_exists( $field, $_POST ) ){
-				update_post_meta( $post_id, $field, $_POST[ $field ] );
-			}
+            unset($_SESSION["est_to_remove"]);
+            unset($_SESSION["inv_to_remove"]);
+            unset($_SESSION["inv_to_add"]);
+            unset($_SESSION["est_to_add"]);
+            unset($_SESSION["update_inv"]);
+            unset($_SESSION["update_est"]);
 
-			if ($field == 'project'){
-				$pod = pods('mg_task',$post_id, true);
-
-				$data = array(
-					'project' => $_POST[ $field ],
-				);
-
-				$pod->save($data);
-
-			}
-		}
+            if ($field === 'project'){
+                $pod = pods('mg_task',$post_id, true);
+                $data = array(
+                    'project' => $_POST[ $field ],
+                );
+                $pod->save($data);
+            }
+            elseif ($field === 'estimates_to_remove') {
+                if (isset($_POST["estimates_to_remove"]) && check_for_value($_POST["estimates_to_remove"]) === true){
+                    $prev_est_val = maybe_get_pod_id(get_post_meta($post_id,'add_line_item_to_estimate',false));
+                    $prev_est_val = $prev_est_val === false ? array() : $prev_est_val;
+                    $est_to_remove = is_array($_POST["estimates_to_remove"]) ? $_POST["estimates_to_remove"] : explode(",",$_POST["estimates_to_remove"]);
+                    $est_to_remove = array_intersect($prev_est_val,$est_to_remove);
+                    $_SESSION["est_to_remove"] = $est_to_remove;
+                    if (is_array($est_to_remove) && !empty($est_to_remove)){
+                            $pod = pods('mg_task',$post_id, true);
+                            $pod_item_id = $pod->remove_from('add_line_item_to_estimate',$est_to_remove,$post_id);
+                            //delete_post_meta($post_id,'add_line_item_to_estimate',$e_to_r);
+                    }
+                }
+            }
+            elseif ($field === 'invoices_to_remove') {
+                if (isset($_POST["invoices_to_remove"]) && check_for_value($_POST["invoices_to_remove"]) === true){
+                    $prev_inv_val = get_post_meta($post_id,'add_line_item_to_invoice',false);
+                    $prev_inv_val = $prev_inv_val === false ? array() : $prev_inv_val;
+                    if (!is_array($_POST["invoices_to_remove"])){
+                        $inv_to_remove = explode(",",$_POST["invoices_to_remove"]);
+                    }
+                    else {
+                        $inv_to_remove = $_POST["invoices_to_remove"];
+                    }
+                    $inv_to_remove = array_intersect($inv_to_remove,$prev_inv_val);
+                    $_SESSION["inv_to_remove"] = $inv_to_remove;
+                    if (is_array($inv_to_remove) && !empty($inv_to_remove)){
+                        $pod = pods('mg_task',$post_id, true);
+                        $pod_item_id = $pod->remove_from('add_line_item_to_invoice',$inv_to_remove,$post_id);
+                        //delete_post_meta($post_id,'add_line_item_to_estimate',$e_to_r);
+                    }
+                }
+            }
+            elseif ($field === 'add_line_item_to_invoice') {
+                if (isset($_POST["add_line_item_to_invoice"]) && check_for_value($_POST["add_line_item_to_invoice"]) === true){
+                    $prev_inv_val = maybe_get_pod_id(get_post_meta($post_id,'add_line_item_to_invoice',false));
+                    if (!is_array($_POST["add_line_item_to_invoice"])){
+                        $inv_to_add = explode(",",$_POST["add_line_item_to_invoice"]);
+                    }
+                    else {
+                        $inv_to_add = $_POST["add_line_item_to_invoice"];
+                    }
+                    if ($prev_inv_val[0] === false){
+                        $prev_inv_val = array();
+                        $inv_to_add = array_diff($inv_to_add,$prev_inv_val);
+                    }
+                    else {
+                        $inv_to_add = array_diff($prev_inv_val,$inv_to_add);
+                    }
+                    $_SESSION["inv_to_add"] = $inv_to_add;
+                    if (is_array($inv_to_add) && !empty($inv_to_add)){
+                            $pod = pods('mg_task',$post_id, true);
+                            $pod->add_to('add_line_item_to_invoice',$inv_to_add);
+                    }
+                }
+            }
+            elseif ($field === 'add_line_item_to_estimate') {
+                if (isset($_POST["add_line_item_to_estimate"]) && check_for_value($_POST["add_line_item_to_estimate"]) === true){
+                    $prev_est_val = maybe_get_pod_id(get_post_meta($post_id,'add_line_item_to_estimate',false));
+                    if (!is_array($_POST["add_line_item_to_estimate"])){
+                        $est_to_add = explode(",",$_POST["add_line_item_to_estimate"]);
+                    }
+                    else {
+                        $est_to_add = $_POST["add_line_item_to_estimate"];
+                    }
+                    if ($prev_est_val[0] === false){
+                        $prev_est_val = array();
+                        $est_to_add = array_diff($est_to_add,$prev_est_val);
+                    }
+                    else {
+                        $est_to_add = array_diff($est_to_add,$prev_est_val);
+                    }
+                    $_SESSION["est_to_add"] = $est_to_add;
+                    if (is_array($est_to_add) && !empty($est_to_add)){
+                        $pod = pods('mg_task',$post_id, true);
+                        $pod->add_to('add_line_item_to_estimate',$est_to_add);
+                    }
+                }
+            }
+            elseif ($field === 'estimated_time') {
+                $estimates = get_post_meta($post_id,'add_line_item_to_estimate',false);
+                $invoices = get_post_meta($post_id,'add_line_item_to_invoice',false);
+                $estimates = $estimates === false ? array() : $estimates;
+                $invoices = $invoices === false ? array() : $invoices;
+                $_SESSION["update_est"] = $estimates;
+                $_SESSION["update_inv"] = $invoices;
+                update_post_meta( $post_id, $field, $_POST[ $field ] );
+            } else {
+                update_post_meta( $post_id, $field, $_POST[ $field ] );
+            }
+            if ($field === 'estimated_time' || $field === 'add_line_item_to_estimate' || $field === 'add_line_item_to_invoice' || $field === 'invoices_to_remove' || $field === 'estimates_to_remove' ){
+                if (isset($_POST[$field]) && check_for_value($_POST[$field]) === true){
+                    if (is_array($_POST[$field])){
+                        foreach ($_POST[$field] as $item){
+                            $object = null;
+                            $object = $field === 'add_line_item_to_estimate' || $field === 'estimates_to_remove' ? SI_Estimate::get_instance($item) : $object;
+                            $object = $field === 'add_line_item_to_invoice' || $field === 'invoices_to_remove' ? SI_Invoice::get_instance($item) : $object;
+                            if ($object !== null){
+                                $object->set_calculated_total();
+                            }
+                        }
+                    } elseif ($field === 'add_line_item_to_estimate' || $field === 'add_line_item_to_invoice' || $field === 'invoices_to_remove' || $field === 'estimates_to_remove') {
+                        if ($field === 'estimated_time' &&
+                                (isset($_POST['add_line_item_to_estimate']) && check_for_value($_POST['add_line_item_to_estimate']) !== true) ||
+                                 !isset($_POST['add_line_item_to_estimate']) &&
+                                (isset($_POST['add_line_item_to_invoice']) && check_for_value($_POST['add_line_item_to_invoice']) !== true) ||
+                                 !isset($_POST['add_line_item_to_invoice']) &&
+                                (isset($_POST['invoices_to_remove']) && check_for_value($_POST['invoices_to_remove']) !== true) ||
+                                 !isset($_POST['invoices_to_remove']) &&
+                                (isset($_POST['estimates_to_remove']) && check_for_value($_POST['estimates_to_remove']) !== true) ||
+                                 !isset($_POST['estimates_to_remove']))
+                        {
+                            $prev_time_val = get_post_meta($post_id, 'estimated_time',true);
+                            if (isset($prev_time_val) && check_for_value($prev_time_val)){
+                                if (convert_estimated_time_to_minutes($_POST[$field]) !== convert_estimated_time_to_minutes($prev_time_val)){
+                                    $fire = true;
+                                } else {
+                                    $fire = false;
+                                }
+                            }
+                        } else {
+                            $fire = true;
+                        }
+                        $items = array(
+                                "invoices" => array(),
+                                "estimates" => array()
+                            );
+                        if (
+                            (isset($_POST["add_line_item_to_estimate"]) && $_POST["add_line_item_to_estimate"] !== false && !empty($_POST["add_line_item_to_estimate"]) && !is_null($_POST["add_line_item_to_estimate"])) &&
+                            (isset($_POST["add_line_item_to_estimate"][0]) && $_POST["add_line_item_to_estimate"][0] !== false && !empty($_POST["add_line_item_to_estimate"][0]) && !is_null($_POST["add_line_item_to_estimate"][0]))
+                        ){
+                            if (is_array($_POST["add_line_item_to_estimate"])){
+                                $items["estimates"] = array_merge($items["estimates"], $_POST["add_line_item_to_estimate"]);
+                            } else {
+                                $items["estimates"] = explode(",",$_POST["add_line_item_to_estimate"]);
+                            }
+                        }
+                        if (
+                            (isset($_POST["add_line_item_to_invoice"]) && $_POST["add_line_item_to_invoice"] !== false && !empty($_POST["add_line_item_to_invoice"]) && !is_null($_POST["add_line_item_to_invoice"])) &&
+                            (isset($_POST["add_line_item_to_invoice"][0]) && $_POST["add_line_item_to_invoice"][0] !== false && !empty($_POST["add_line_item_to_invoice"][0]) && !is_null($_POST["add_line_item_to_invoice"][0]))
+                        ){
+                            if (is_array($_POST["add_line_item_to_invoice"])){
+                                $items["invoices"] = array_merge($items["invoices"], $_POST["add_line_item_to_invoice"]);
+                            } else {
+                                $items["invoices"] = explode(",",$_POST["add_line_item_to_invoice"]);
+                            }
+                        }
+                        if (
+                            (isset($_POST["estimates_to_remove"]) && $_POST["estimates_to_remove"] !== false && !empty($_POST["estimates_to_remove"]) && !is_null($_POST["estimates_to_remove"])) &&
+                            (isset($_POST["estimates_to_remove"][0]) && $_POST["estimates_to_remove"][0] !== false && !empty($_POST["estimates_to_remove"][0]) && !is_null($_POST["estimates_to_remove"][0]))
+                        ){
+                            if (is_array($_POST["estimates_to_remove"])){
+                                $items["estimates"] = array_merge($items["estimates"], $_POST["estimates_to_remove"]);
+                            } else {
+                                $items["estimates"] = explode(",",$_POST["estimates_to_remove"]);
+                            }
+                        }
+                        if (
+                            (isset($_POST["invoices_to_remove"]) && $_POST["invoices_to_remove"] !== false && !empty($_POST["invoices_to_remove"]) && !is_null($_POST["invoices_to_remove"])) &&
+                            (isset($_POST["invoices_to_remove"][0]) && $_POST["invoices_to_remove"][0] !== false && !empty($_POST["invoices_to_remove"][0]) && !is_null($_POST["invoices_to_remove"][0]))
+                        ){
+                            if (is_array($_POST["invoices_to_remove"])){
+                                $items["invoices"] = array_merge($items["invoices"], $_POST["invoices_to_remove"]);
+                            } else {
+                                $items["invoices"] = explode(",",$_POST["invoices_to_remove"]);
+                            }
+                        }
+                        if (isset($fire) && $fire === true){
+                            foreach ($items as $key => $value){
+                                foreach ($value as $item){
+                                    $object = null;
+                                    if ($key === 'estimates'){
+                                        $object = SI_Estimate::get_instance($item);
+                                    }
+                                    elseif ($key === 'invoices'){
+                                        $object = SI_Estimate::get_instance($item);
+                                    }
+                                    if ($object !== null){
+                                        $object->set_calculated_total();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 	}
+    unset($_SESSION["est_to_remove"]);
+    unset($_SESSION["inv_to_remove"]);
+    unset($_SESSION["inv_to_add"]);
+    unset($_SESSION["est_to_add"]);
+    unset($_SESSION["update_inv"]);
+    unset($_SESSION["update_est"]);
 }
 
 /**
@@ -674,9 +866,9 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
 		
 	// if we have post IDs
 	if ( ! empty( $post_ids ) && is_array( $post_ids ) ) {
-	
+
 		// get the custom fields
-		$custom_fields = array( 'issue_type', 'priority', 'estimated_time', 'project' );
+		$custom_fields = array( 'issue_type', 'priority', 'estimated_time', 'project', 'invoices_to_remove', 'estimates_to_remove','add_line_item_to_estimate', 'add_line_item_to_invoice' );
 		
 		foreach( $custom_fields as $field ) {
 			
@@ -686,24 +878,162 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
 				// update for each post ID
 				foreach( $post_ids as $post_id ) {
 
-					update_post_meta( $post_id, $field, $_POST[ $field ] );
+                    unset($_SESSION["est_to_remove"]);
+                    unset($_SESSION["inv_to_remove"]);
+                    unset($_SESSION["inv_to_add"]);
+                    unset($_SESSION["est_to_add"]);
+                    unset($_SESSION['changed_docs']);
 
-					if ($field == 'project'){
-						$pod = pods('mg_task',$post_id, true);
+                    $_SESSION['changed_docs'] = array(
+                        'estimates' => array(),
+                        'invoices'  => array()
+                    );
 
-						$data = array(
-								'project' => $_POST[ $field ],
-						);
+                    if ($field === 'project'){
+                        $pod = pods('mg_task',$post_id, true);
+                        $data = array(
+                            'project' => $_POST[ $field ],
+                        );
+                        $pod->save($data);
+                    }
+                    elseif ($field === 'estimates_to_remove') {
+                        if ( isset($_POST["estimates_to_remove"]) && check_for_value($_POST["estimates_to_remove"])){
+                            $prev_est_val = maybe_get_pod_id(get_post_meta($post_id,'add_line_item_to_estimate',false));
+                            if (!is_array($_POST["estimates_to_remove"])){
+                                $est_to_remove = explode(",",$_POST["estimates_to_remove"]);
+                            }
+                            else {
+                                $est_to_remove = $_POST["estimates_to_remove"];
+                            }
+                            if ($prev_est_val[0] === false){
+                                $prev_est_val = array();
+                            }
+                            $est_to_remove = array_intersect($prev_est_val,$est_to_remove);
+                            $_SESSION["est_to_remove"] = $est_to_remove;
+                            if (is_array($est_to_remove) && !empty($est_to_remove)){
+                                    $pod = pods('mg_task',$post_id, true);
+                                    $pod_item_id = $pod->remove_from('add_line_item_to_estimate',$est_to_remove,$post_id);
+                                    //delete_post_meta($post_id,'add_line_item_to_estimate',$e_to_r);
+                            }
+                        }
+                    }
+                    elseif ($field === 'invoices_to_remove') {
+                        if ( isset($_POST["invoices_to_remove"]) && check_for_value($_POST["invoices_to_remove"])){
+                            $prev_inv_val = maybe_get_pod_id(get_post_meta($post_id,'add_line_item_to_invoice',false));
+                            if (!is_array($_POST["invoices_to_remove"])){
+                                $invoices_to_remove = explode(",",$_POST["invoices_to_remove"]);
+                            }
+                            else {
+                                $invoices_to_remove = $_POST["invoices_to_remove"];
+                            }
 
-						$pod->save($data);
+                            if ($prev_inv_val[0] === false){
+                                $prev_inv_val = array();
+                            }
 
-					}
+                            $inv_to_remove = array_intersect($prev_inv_val,$invoices_to_remove);
+                            if (empty($inv_to_remove)){
+                                $inv_to_remove = $invoices_to_remove;
+                            }
+                            $_SESSION["inv_to_remove"] = $inv_to_remove;
+                            if (is_array($inv_to_remove) && !empty($inv_to_remove)){
+                                    $pod = pods('mg_task',$post_id, true);
+                                    $pod_item_id = $pod->remove_from('add_line_item_to_invoice',$inv_to_remove,$post_id);
+                                    //delete_post_meta($post_id,'add_line_item_to_estimate',$e_to_r);
+                            }
+                        }
+                    }
+                    elseif ($field === 'add_line_item_to_invoice') {
+                        if ( isset($_POST["add_line_item_to_invoice"]) && check_for_value($_POST["add_line_item_to_invoice"])){
+                            $prev_inv_val = maybe_get_pod_id(get_post_meta($post_id,'add_line_item_to_invoice',false));
+                            if (!is_array($_POST["add_line_item_to_invoice"])){
+                                $inv_to_add = explode(",",$_POST["add_line_item_to_invoice"]);
+                            }
+                            else {
+                                $inv_to_add = $_POST["add_line_item_to_invoice"];
+                            }
+
+                            if ($prev_inv_val[0] === false){
+                                $prev_inv_val = array();
+                            }
+
+                            $inv_to_add = array_diff($inv_to_add,$prev_inv_val);
+                            $_SESSION["inv_to_add"] = $inv_to_add;
+                            if (is_array($inv_to_add) && !empty($inv_to_add)){
+                                    $pod = pods('mg_task',$post_id, true);
+                                    $pod->add_to('add_line_item_to_invoice',$inv_to_add);
+                            }
+                        }
+                    }
+                    elseif ($field === 'add_line_item_to_estimate') {
+                        if ( isset($_POST["add_line_item_to_estimate"]) && check_for_value($_POST["add_line_item_to_estimate"])){
+                            $prev_est_val = maybe_get_pod_id(get_post_meta($post_id,'add_line_item_to_estimate',false));
+                            if (!is_array($_POST["add_line_item_to_estimate"])){
+                                $est_to_add = explode(",",$_POST["add_line_item_to_estimate"]);
+                            }
+                            else {
+                                $est_to_add = $_POST["add_line_item_to_estimate"];
+                            }
+                            if ($prev_est_val[0] === false){
+                                $prev_est_val = array();
+                                $est_to_add = array_diff($est_to_add,$prev_est_val);
+                            }
+                            else {
+                                $est_to_add = array_diff($est_to_add,$prev_est_val);
+                            }
+                            $_SESSION["est_to_add"] = $est_to_add;
+                            if (is_array($est_to_add) && !empty($est_to_add)){
+                                $pod = pods('mg_task',$post_id, true);
+                                $pod->add_to('add_line_item_to_estimate',$est_to_add);
+                            }
+                        }
+                    }
+                    else {
+                        update_post_meta( $post_id, $field, $_POST[ $field ] );
+                    }
 				}
+                if ($field === 'estimated_time' || $field === 'add_line_item_to_estimate' || $field === 'add_line_item_to_invoice' || $field === 'invoices_to_remove' || $field === 'estimates_to_remove' ){
+                    if ($field !== 'estimated_time'){
+                        foreach ($_POST[$field] as $item){
+                            $object = null;
+                            $object = $field === 'add_line_item_to_estimate' || $field === 'estimates_to_remove' ? SI_Estimate::get_instance($item) : $object;
+                            $object = $field === 'add_line_item_to_invoice' || $field === 'invoices_to_remove' ? SI_Invoice::get_instance($item) : $object;
+                            if ($object !== null){
+                                $object->set_calculated_total();
+                            }
+                        }
+                    }
+                    elseif ($field === 'estimated_time') {
+
+                        if (isset($_SESSION['changed_docs']['invoices']) && check_for_value($_SESSION['changed_docs']['invoices'])){
+                            foreach ($_SESSION['changed_docs']['invoices'] as $item){
+                                $item_id = maybe_get_pod_id($item);
+                                $object = SI_Invoice::get_instance($item_id[0]);
+                                if (isset($object) && is_object($object)){
+                                    $object->set_calculated_total();
+                                }
+                            }
+                        }
+                        if (isset($_SESSION['changed_docs']['estimates']) && check_for_value($_SESSION['changed_docs']['estimates'])){
+                            foreach ($_SESSION['changed_docs']['estimates'] as $item){
+                                $item_id = maybe_get_pod_id($item);
+                                $object = SI_Estimate::get_instance($item_id[0]);
+                                if (isset($object) && is_object($object)){
+                                    $object->set_calculated_total();
+                                }
+                            }
+                        }
+                    }
+                }
 			}
 		}
 		
 	}
-	
+    unset($_SESSION["est_to_remove"]);
+    unset($_SESSION["inv_to_remove"]);
+    unset($_SESSION["inv_to_add"]);
+    unset($_SESSION["est_to_add"]);
+    unset($_SESSION['changed_docs']);
 }
 add_action( 'wp_ajax_inline_edit_mg_task_meta', 'inline_edit_mg_task_meta',9999 );
 function inline_edit_mg_task_meta() {
@@ -720,6 +1050,11 @@ function inline_edit_mg_task_meta() {
 
 			$field = str_replace('-','_',$_POST['referrer']);
 
+            $_SESSION['changed_docs'] = array(
+                'invoices' => array(),
+                'estimates' => array()
+            );
+
 			// if it has a value, doesn't update if empty on bulk
 			if ( isset( $_POST[ $field ] ) && !empty( $_POST[ $field ] ) ) {
 
@@ -729,6 +1064,25 @@ function inline_edit_mg_task_meta() {
 					$new_data = get_post_meta($post_id, $field, true);
 
 				if ($field === 'estimated_time' && $response === true){
+
+                        if (isset($_SESSION['changed_docs']['invoices']) && check_for_value($_SESSION['changed_docs']['invoices'])){
+                            foreach ($_SESSION['changed_docs']['invoices'] as $item){
+                                $item_id = maybe_get_pod_id($item);
+                                $object = SI_Invoice::get_instance($item_id[0]);
+                                if (isset($object) && is_object($object)){
+                                    $object->set_calculated_total();
+                                }
+                            }
+                        }
+                        if (isset($_SESSION['changed_docs']['estimates']) && check_for_value($_SESSION['changed_docs']['estimates'])){
+                            foreach ($_SESSION['changed_docs']['estimates'] as $item){
+                                $item_id = maybe_get_pod_id($item);
+                                $object = SI_Estimate::get_instance($item_id[0]);
+                                if (isset($object) && is_object($object)){
+                                    $object->set_calculated_total();
+                                }
+                            }
+                        }
 
 					if (!is_numeric($new_data)){
 						$new_data = convert_estimated_time_to_minutes($new_data);
@@ -751,6 +1105,7 @@ function inline_edit_mg_task_meta() {
 			);
 			$response = json_encode($r, JSON_FORCE_OBJECT);
 		}
+        unset($_SESSION['changed_docs']);
 	}
 	exit($response);
 }
@@ -837,6 +1192,38 @@ function posts_filter_act_events($query) {
 		/* more queries go here */
 
 	}
+}
+
+function check_for_value( $input ){
+    if (is_array($input)){
+		$input = array_values($input);
+    }
+    if (
+        (
+            isset($input) &&
+            $input !== false &&
+            !empty($input) &&
+            !is_null($input)
+        ) &&
+        (
+            (
+                is_array($input) &&
+                isset($input[0]) &&
+                $input[0] !== false &&
+                !empty($input[0]) &&
+                !is_null($input[0])
+            ) ||
+            (
+                !is_array($input) &&
+                is_string($input) || is_float($input) || is_int($input)
+            )
+        )
+    ){
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 
