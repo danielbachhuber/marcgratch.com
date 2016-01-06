@@ -23,7 +23,7 @@ if ( class_exists( 'WPSEO_Redirect_Manager' ) && ! class_exists( 'WPSEO_REGEX_Re
 		/**
 		 * Replace the $regex vars with URL matches
 		 *
-		 * @param array $matches
+		 * @param array $matches The matches from the regex.
 		 *
 		 * @return string
 		 */
@@ -31,7 +31,7 @@ if ( class_exists( 'WPSEO_Redirect_Manager' ) && ! class_exists( 'WPSEO_REGEX_Re
 
 			$arr_key = substr( $matches[0], 1 );
 
-			if ( isset ( $this->url_matches[ $arr_key ] ) ) {
+			if ( isset( $this->url_matches[ $arr_key ] ) ) {
 				return $this->url_matches[ $arr_key ];
 			}
 

@@ -43,14 +43,14 @@ if ( class_exists( 'WPSEO_Redirect_Manager' ) && ! class_exists( 'WPSEO_URL_Redi
 		/**
 		 * Searches for the URL and get it's endpoint
 		 *
-		 * @param string $url
+		 * @param string $url The url that will be search in the redirects array.
 		 *
 		 * @return mixed
 		 */
 		public function search_url( $url ) {
 			$this->load_redirects();
 
-			if ( isset ( $this->redirects[ $url ] ) ) {
+			if ( isset( $this->redirects[ $url ] ) ) {
 				return $this->redirects[ $url ]['url'];
 			}
 		}
@@ -78,12 +78,12 @@ if ( class_exists( 'WPSEO_Redirect_Manager' ) && ! class_exists( 'WPSEO_URL_Redi
 		/**
 		 * Check if URL exists in the redirects.
 		 *
-		 * @param string $url
+		 * @param string $url The url that will be search for.
 		 *
 		 * @return bool|string
 		 */
 		private function find_url( $url ) {
-			if ( isset ( $this->redirects[ $url ] ) ) {
+			if ( isset( $this->redirects[ $url ] ) ) {
 				return $this->redirect_url( $url );
 			}
 
@@ -94,7 +94,7 @@ if ( class_exists( 'WPSEO_Redirect_Manager' ) && ! class_exists( 'WPSEO_URL_Redi
 		 * Fallback if requested url isn't found. This will add a slash if there isn't a slash or it will remove a
 		 * trailing slash when there isn't one.
 		 *
-		 * @param string $url
+		 * @param string $url The url that will be searched.
 		 *
 		 * @return bool|string
 		 */
@@ -103,14 +103,14 @@ if ( class_exists( 'WPSEO_Redirect_Manager' ) && ! class_exists( 'WPSEO_URL_Redi
 			// Check if last character is a slash, if so trim it.
 			if ( substr( $url, -1 ) === '/' ) {
 				$trimmed_url = rtrim( $url, '/' );
-				if ( isset ( $this->redirects[ $trimmed_url ] ) ) {
+				if ( isset( $this->redirects[ $trimmed_url ] ) ) {
 					return $this->redirect_url( $trimmed_url );
 				}
 			}
 			else {
 				// There was no trailing slash, so add this to check.
 				$slashed_url = $url . '/';
-				if ( isset ( $this->redirects[ $slashed_url ] ) ) {
+				if ( isset( $this->redirects[ $slashed_url ] ) ) {
 					return $this->redirect_url( $slashed_url );
 				}
 			}
@@ -122,7 +122,7 @@ if ( class_exists( 'WPSEO_Redirect_Manager' ) && ! class_exists( 'WPSEO_URL_Redi
 		/**
 		 * Getting the redirect url by given $url
 		 *
-		 * @param string $url
+		 * @param string $url The url that will be parsed as the redirect url.
 		 *
 		 * @return string mixed
 		 */
@@ -139,8 +139,8 @@ if ( class_exists( 'WPSEO_Redirect_Manager' ) && ! class_exists( 'WPSEO_URL_Redi
 		/**
 		 * Perform the redirect
 		 *
-		 * @param string $url
-		 * @param string $redirect_url
+		 * @param string $url          The url that will be redirected.
+		 * @param string $redirect_url The url where the old_url redirects to.
 		 */
 		private function do_redirect( $url, $redirect_url ) {
 			if ( 410 !== $this->redirects[ $url ]['type'] ) {

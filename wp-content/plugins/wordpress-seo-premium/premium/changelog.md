@@ -1,3 +1,30 @@
+### 3.0.7: December 23rd, 2015
+* Merge with Yoast SEO core 3.0.7, see the [core changelog](https://wordpress.org/plugins/wordpress-seo/changelog/).
+
+### 3.0.6: December 1st, 2015
+* Merge with Yoast SEO core 3.0.6, see the [core changelog](https://wordpress.org/plugins/wordpress-seo/changelog/).
+
+### 3.0.5: December 1st, 2015
+* Fixed performance issues in custom fields integration.
+* Merge with Yoast SEO core 3.0.5, see the [core changelog](https://wordpress.org/plugins/wordpress-seo/changelog/).
+
+### 3.0.4: November 25th, 2015
+* Merge with Yoast SEO core 3.0.4, see the [core changelog](https://wordpress.org/plugins/wordpress-seo/changelog/).
+
+### 3.0.3: November 19th, 2015
+* Merge with Yoast SEO core 3.0.3, see the [core changelog](https://wordpress.org/plugins/wordpress-seo/changelog/).
+
+### 3.0.2: November 19th, 2015
+* Merge with Yoast SEO core 3.0.2, see the [core changelog](https://wordpress.org/plugins/wordpress-seo/changelog/).
+
+### 3.0.1: November 18th, 2015
+* Merge with Yoast SEO core 3.0.1, see the [core changelog](https://wordpress.org/plugins/wordpress-seo/changelog/).
+
+### 3.0: November 18th, 2015
+* Merge with Yoast SEO core 3.0, including the realtime content analysis tool and social settings for taxonomies. See the [core changelog](https://wordpress.org/plugins/wordpress-seo/changelog/).
+* Added possibility to analyze multiple keywords per post/page.
+* Added support beacon to all the Yoast SEO settings pages, allowing users to ask for support straight from their WordPress backend.
+
 ### 2.3.5: September 16th, 2015
 * Merge with Yoast SEO core 2.3.5
 
