@@ -90,7 +90,7 @@ class Toggl_Controller extends SI_Controller {
 	public static function send_new_time_to_toggl( $time_id = 0 ) {
 		$time = SI_Record::get_instance( $time_id );
 		if ( ! is_a( $time, 'SI_Record' ) ) {
-			continue;
+			return;
 		}
 		$data = $time->get_data();
 		$project_id = $data['project_id'];
@@ -103,7 +103,7 @@ class Toggl_Controller extends SI_Controller {
 	public static function maybe_delete_toggl_time( $time_id ) {
 		$time = SI_Record::get_instance( $time_id );
 		if ( ! is_a( $time, 'SI_Record' ) ) {
-			continue;
+			return;
 		}
 		$data = $time->get_data();
 		$project_id = $data['project_id'];
@@ -190,7 +190,8 @@ class Toggl_Controller extends SI_Controller {
 			}
 		}
 
-		foreach ( $entries->data as $key => $time_entry ) {
+		$entries = apply_filters( 'si_toggl_import_entries', $entries->data );
+		foreach ( $entries as $key => $time_entry ) {
 			if ( in_array( $time_entry->id, $already_imported ) ) {
 				continue; // already imported
 			}

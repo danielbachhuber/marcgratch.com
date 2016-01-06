@@ -4,7 +4,7 @@ Donate link: https://sproutapps.co/
 Tags: invoicing, estimates, payments, web invoice, bill, paypal, invoice, pay, online payment, send invoice, bill clients, credit cards, stripe, freshbooks, harvest, wp-invoice
 Requires at least: 3.8
 Tested up to: 4.3
-Stable tag: 9.2.2
+Stable tag: 9.3
 
 == Description ==
 
@@ -22,6 +22,11 @@ The plugin should already be installed at this point. If you still need help che
 **Please visit the [FAQ at Sprout Apps](https://sproutapps.co/support/knowledgebase/sprout-invoices/faqs/).**
 
 == Changelog ==
+
+= 9.3 =
+
+* UPDATE: Default Invoice/Estimate Subject to ID
+* UPDATE: Localization update, including French translation
 
 = 9.2.2 =
 
