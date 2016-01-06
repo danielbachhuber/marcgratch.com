@@ -1,0 +1,28 @@
+.item.item_type_task strong.title {
+    color: #fff;
+    padding: 5px;
+    overflow: hidden;
+    width: 100%;
+    display: block;
+    margin: -5px 0 0;
+}
+
+.item.item_type_task .bug strong.title {
+    background: #d9534f;
+}
+
+.item.item_type_task .new-feature strong.title {
+    background: #5cb85c;
+}
+
+.item.item_type_task .improvement strong.title {
+    background: #5bc0de;
+}
+
+#logo img {
+    max-height: initial;
+}
+
+#doc_history {
+    display: none;
+}

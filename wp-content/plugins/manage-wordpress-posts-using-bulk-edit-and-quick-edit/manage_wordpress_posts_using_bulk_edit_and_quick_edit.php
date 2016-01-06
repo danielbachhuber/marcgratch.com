@@ -215,6 +215,9 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 
 
             foreach ($available_fields as $field => $array){
+                if (!is_array($array)){
+                    $array = explode(",",$array);
+                }
                 foreach ($array as $item){
                     if (!empty($item)){
                         if ($field === 'estimates'){
@@ -696,13 +699,13 @@ function manage_wp_posts_be_qe_save_post( $post_id, $post ) {
                     else {
                         $inv_to_add = $_POST["add_line_item_to_invoice"];
                     }
-                    if ($prev_inv_val[0] === false){
+                    if (isset($prev_inv_val) && check_for_value($prev_inv_val) === false){
                         $prev_inv_val = array();
-                        $inv_to_add = array_diff($inv_to_add,$prev_inv_val);
                     }
-                    else {
-                        $inv_to_add = array_diff($prev_inv_val,$inv_to_add);
+                    if (!is_array($prev_inv_val)){
+                        $prev_inv_val = explode(",",$prev_inv_val);
                     }
+                    $inv_to_add = array_diff($prev_inv_val,$inv_to_add);
                     $_SESSION["inv_to_add"] = $inv_to_add;
                     if (is_array($inv_to_add) && !empty($inv_to_add)){
                             $pod = pods('mg_task',$post_id, true);
@@ -719,13 +722,15 @@ function manage_wp_posts_be_qe_save_post( $post_id, $post ) {
                     else {
                         $est_to_add = $_POST["add_line_item_to_estimate"];
                     }
-                    if ($prev_est_val[0] === false){
+
+                    if (isset($prev_est_val) && check_for_value($prev_est_val) === false){
                         $prev_est_val = array();
-                        $est_to_add = array_diff($est_to_add,$prev_est_val);
                     }
-                    else {
-                        $est_to_add = array_diff($est_to_add,$prev_est_val);
+                    if (!is_array($prev_est_val)){
+                        $prev_est_val = explode(",",$prev_est_val);
                     }
+
+                    $est_to_add = array_diff($est_to_add,$prev_est_val);
                     $_SESSION["est_to_add"] = $est_to_add;
                     if (is_array($est_to_add) && !empty($est_to_add)){
                         $pod = pods('mg_task',$post_id, true);
@@ -863,6 +868,7 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
 
 	// we need the post IDs
 	$post_ids = ( isset( $_POST[ 'post_ids' ] ) && !empty( $_POST[ 'post_ids' ] ) ) ? $_POST[ 'post_ids' ] : NULL;
+	$check = true;
 		
 	// if we have post IDs
 	if ( ! empty( $post_ids ) && is_array( $post_ids ) ) {
@@ -877,6 +883,32 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
 			
 				// update for each post ID
 				foreach( $post_ids as $post_id ) {
+
+				    $rate = get_post_meta($post_id,'rate',true);
+				    $quantity = get_post_meta($post_id,'quantity',true);
+				    $percent_adjustment = get_post_meta($post_id,'percent_adjustment',true);
+				    $issue_type = get_post_meta($post_id,'issue_type',true);
+                    if (check_for_value($rate) !== true || check_for_value($rate) === true && ($rate === "0.00" || $rate === "" )){
+                        $rate = (float)100.00;
+                    }
+                    if (check_for_value($quantity) !== true || check_for_value($quantity) === true && ($quantity === "0" || $quantity === "")){
+                        $quantity = 1;
+                    }
+                    if (check_for_value($percent_adjustment) !== true || check_for_value($percent_adjustment) === true && ($percent_adjustment === "0" || $percent_adjustment === "") ){
+                        $percent_adjustment = 0;
+                    }
+				    if ($issue_type === 'Bug'){
+				        $percent_adjustment = 100;
+				    }
+
+				    if ($check === false){
+                        $val1 = update_post_meta($post_id,'rate',$rate);
+                        $val2 = update_post_meta($post_id,'percent_adjustment',$percent_adjustment);
+                        $val3 = update_post_meta($post_id,'quantity',$quantity);
+				    }
+
+
+
 
                     unset($_SESSION["est_to_remove"]);
                     unset($_SESSION["inv_to_remove"]);
@@ -905,8 +937,11 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
                             else {
                                 $est_to_remove = $_POST["estimates_to_remove"];
                             }
-                            if ($prev_est_val[0] === false){
+                            if (isset($prev_est_val) && check_for_value($prev_est_val) === false){
                                 $prev_est_val = array();
+                            }
+                            if (!is_array($prev_est_val)){
+                                $prev_est_val = explode(",",$prev_est_val);
                             }
                             $est_to_remove = array_intersect($prev_est_val,$est_to_remove);
                             $_SESSION["est_to_remove"] = $est_to_remove;
@@ -927,10 +962,12 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
                                 $invoices_to_remove = $_POST["invoices_to_remove"];
                             }
 
-                            if ($prev_inv_val[0] === false){
+                            if (isset($prev_inv_val) && check_for_value($prev_inv_val) === false){
                                 $prev_inv_val = array();
                             }
-
+                            if (!is_array($prev_inv_val)){
+                                $prev_inv_val = explode(",",$prev_inv_val);
+                            }
                             $inv_to_remove = array_intersect($prev_inv_val,$invoices_to_remove);
                             if (empty($inv_to_remove)){
                                 $inv_to_remove = $invoices_to_remove;
@@ -952,11 +989,12 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
                             else {
                                 $inv_to_add = $_POST["add_line_item_to_invoice"];
                             }
-
-                            if ($prev_inv_val[0] === false){
+                            if (isset($prev_inv_val) && check_for_value($prev_inv_val) === false){
                                 $prev_inv_val = array();
                             }
-
+                            if (!is_array($prev_inv_val)){
+                                $prev_inv_val = explode(",",$prev_inv_val);
+                            }
                             $inv_to_add = array_diff($inv_to_add,$prev_inv_val);
                             $_SESSION["inv_to_add"] = $inv_to_add;
                             if (is_array($inv_to_add) && !empty($inv_to_add)){
@@ -974,11 +1012,14 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
                             else {
                                 $est_to_add = $_POST["add_line_item_to_estimate"];
                             }
-                            if ($prev_est_val[0] === false){
+                            if (isset($prev_est_val) && check_for_value($prev_est_val) === false){
                                 $prev_est_val = array();
                                 $est_to_add = array_diff($est_to_add,$prev_est_val);
                             }
                             else {
+                                if (!is_array($prev_est_val)){
+                                    $prev_est_val = explode(",",$prev_est_val);
+                                }
                                 $est_to_add = array_diff($est_to_add,$prev_est_val);
                             }
                             $_SESSION["est_to_add"] = $est_to_add;
@@ -1025,9 +1066,10 @@ function manage_wp_posts_using_bulk_quick_save_bulk_edit() {
                         }
                     }
                 }
+            $check = true;
 			}
 		}
-		
+		$check = false;
 	}
     unset($_SESSION["est_to_remove"]);
     unset($_SESSION["inv_to_remove"]);
@@ -1175,7 +1217,7 @@ function posts_filter_act_events($query) {
 
 	$qv = &$query->query_vars;//grab a reference to manipulate directly
 	if( $pagenow=='edit.php' &&
-			'mg_task'==$_GET['post_type'])
+			isset($_GET['post_type']) && 'mg_task'==$_GET['post_type'])
 	{
 
 		/* If this drop-down has been affected, add a meta query to the query
@@ -1215,7 +1257,7 @@ function check_for_value( $input ){
             ) ||
             (
                 !is_array($input) &&
-                is_string($input) || is_float($input) || is_int($input)
+                is_string($input) || is_float($input) || is_int($input) || is_object($input)
             )
         )
     ){
