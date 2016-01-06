@@ -405,7 +405,7 @@ function process_ajax_on_project_change(){
 		}
 	}
 
-	if (empty($has_admin && current_user_can('update_core'))){
+	if (empty($has_admin) && current_user_can('update_core')){
 		$args = array(
 				'role' => 'administrator'
 		);
