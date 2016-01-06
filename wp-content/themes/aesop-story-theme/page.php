@@ -4,9 +4,10 @@
  Template Name: Page
 */
 
-	get_header();
+	get_header(); ?>
+<div class="ast-index-listing ast-width clearfix">
 
-	if ( have_posts() ) :
+	<?php if ( have_posts() ) :
 
 		while ( have_posts() ) : the_post();
 
@@ -19,5 +20,7 @@
 		get_template_part( 'content/none' );
 
 	endif;
+?>
+</div>
 
-get_footer();
+<?php get_footer(); ?>
