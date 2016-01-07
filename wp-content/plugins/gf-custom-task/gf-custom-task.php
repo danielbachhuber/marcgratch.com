@@ -15,12 +15,30 @@ function populate_project_dropdown( $form ) {
 		return $form;
 	}
 
+	if (isset($_GET['project']) && check_for_value($_GET['project'])){
+		if (is_numeric($_GET['project'])){
+			$project_id = $_GET['project'];
+		}
+		else {
+			$project_id = maybe_get_pod_id(get_page_by_path($_GET['project'],OBJECT,'sa_project'));
+		}
+		$args = array(
+			'post_type' => 'sa_project',
+			'post__in ' => $project_id,
+			'posts_per_page' => -1,
+			'status' => 'published'
+		);
+	}
+	else {
+		$args = array(
+			'post_type' => 'sa_project',
+			'posts_per_page' => -1,
+			'status' => 'published'
+		);
+	}
+
 	//Getting all the projects;
-	$args = array(
-		'post_type' => 'sa_project',
-		'posts_per_page' => -1,
-		'status' => 'published'
-	);
+
 	$posts = get_posts( $args );
 
 	//Creating drop down item array.
@@ -60,9 +78,27 @@ function populate_pods_dropdown( $form ) {
 		return $form;
 	}
 
+	if (isset($_GET['project']) && check_for_value($_GET['project'])){
+		if (is_numeric($_GET['project'])){
+			$project_id = $_GET['project'];
+		}
+		else {
+			$project_id = maybe_get_pod_id(get_page_by_path($_GET['project'],OBJECT,'sa_project'));
+		}
+		$SI_Project = SI_Project::get_instance( $project_id );
+		$invoice_ids = $SI_Project->get_invoices();
+		$estimate_ids = $SI_Project->get_estimates();
+		$client_ids = $SI_Project->get_associated_clients();
+		$users = array();
+		$estimates = array();
+		$invoices = array();
+		$asscoiativeTasks = array();
+	}
+
+
+
 	//Getting all the projects;
 	$pod = pods('mg_task',$z_id = null, true);
-
 
 	//Adding items to field id 8. Replace 8 with your actual field id. You can get the field id by looking at the input name in the markup.
 	foreach ( $form['fields'] as &$field ) {
@@ -116,10 +152,33 @@ function populate_pods_dropdown( $form ) {
 
 			$field->choices = $items;
 		}
-		//@todo use ajax to remove user from field 6 when selected in field 8
 		elseif ($field->id == 8 || $field->id == 9){
 
-			$users = get_users();
+			if (isset($client_ids) && check_for_value($client_ids) === true){
+
+				foreach ($client_ids as $clients_id){
+					$SI_Client = SI_Client::get_instance($clients_id);
+					$user_ids = $SI_Client->get_associated_users();
+
+					foreach ($user_ids as $user_id){
+
+						if (user_can($user_id, 'update_core')){
+							$has_admin[] = $user_id;
+						}
+						$users[] = get_user_by('ID',$user_id);
+					}
+				}
+
+				if (empty($has_admin) && current_user_can('update_core')){
+					$args = array(
+						'role' => 'administrator'
+					);
+					$users = array_merge($users,get_users( $args ));
+				}
+			}
+			else {
+				$users = get_users();
+			}
 
 			//Creating drop down item array.
 			$items = array();
@@ -137,17 +196,64 @@ function populate_pods_dropdown( $form ) {
 		}
 		elseif ($field->id == 11){
 
+			if (isset($project_id) && check_for_value($project_id) === true ){
+				$args = array(
+					'post_type' => 'mg_task',
+					'posts_per_page' => -1,
+					'post_status' => 'published',
+					'meta_key'	=> 'project',
+					'meta_value'	=> $project_id
+				);
+			}
+			else {
+				$args = array(
+					'post_type' => 'mg_task',
+					'posts_per_page' => -1,
+					'post_status' => 'published'
+				);
+			}
+
 			//Creating drop down item array.
 			$items = array();
 
 			//Adding initial blank value.
 			$items[] = array( 'text' => '', 'value' => '' );
 
-			$args = array(
+
+			$posts = get_posts( $args );
+
+			foreach( $posts as $post ) {
+
+				$items[] = array( 'text' => $post->post_title, 'value' => $post->ID );
+
+			}
+
+			$field->choices = $items;
+		}
+		elseif ($field->id == 18){
+
+			//Creating drop down item array.
+			$items = array();
+
+			//Adding initial blank value.
+			$items[] = array( 'text' => '-- No Primary Task --', 'value' => '' );
+
+			if (isset($project_id) && check_for_value($project_id) === true ){
+				$args = array(
+					'post_type' => 'mg_task',
+					'posts_per_page' => -1,
+					'post_status' => 'published',
+					'meta_key'	=> 'project',
+					'meta_value'	=> $project_id
+				);
+			}
+			else {
+				$args = array(
 					'post_type' => 'mg_task',
 					'posts_per_page' => -1,
 					'post_status' => 'published'
-			);
+				);
+			}
 
 			$posts = get_posts( $args );
 
@@ -161,18 +267,40 @@ function populate_pods_dropdown( $form ) {
 		}
 		elseif ($field->id == 13){
 
+			if (isset($invoice_ids) && check_for_value($invoice_ids) === true){
+				foreach ($invoice_ids as $invoice_id){
+
+					$invoices[] = (int)$invoice_id;
+
+				}
+				$args = array(
+					'post_type' => 'sa_invoice',
+					'posts_per_page' => -1,
+					'public' => false,
+					'post_status' => array('temp','request','Pending','Scheduled','publish'),
+					'post__in'	=> $invoices
+					);
+			}
+			elseif (isset($invoice_ids) && check_for_value($invoice_ids) === false){
+				$args = array(
+					'post_type' => 'sa_invoice',
+					'posts_per_page' => 0
+				);
+			}
+			else {
+				$args = array(
+					'post_type' => 'sa_invoice',
+					'posts_per_page' => -1,
+					'public' => false,
+					'post_status' => array('temp','request','Pending','Scheduled','publish')
+				);
+			}
+
 			//Creating drop down item array.
 			$items = array();
 
 			//Adding initial blank value.
 			$items[] = array( 'text' => '', 'value' => '' );
-
-			$args = array(
-				'post_type' => 'sa_invoice',
-				'posts_per_page' => -1,
-				'public' => false,
-				'post_status' => array('temp','request','Pending','Scheduled','publish')
-			);
 
 			$posts = get_posts( $args );
 
@@ -186,18 +314,40 @@ function populate_pods_dropdown( $form ) {
 		}
 		elseif ($field->id == 14){
 
+			if (isset($estimate_ids) && check_for_value($estimate_ids) === true){
+				foreach ($estimate_ids as $estimate_id){
+
+					$estimates[] = (int)$estimate_id;
+
+				}
+				$args = array(
+					'post_type' => 'sa_estimate',
+					'posts_per_page' => -1,
+					'public' => false,
+					'post_status' => array('temp','request','Pending','Scheduled','publish'),
+					'post__in'	=> $estimates
+				);
+			}
+			elseif (isset($estimate_ids) && check_for_value($estimate_ids) === false){
+				$args = array(
+					'post_type' => 'sa_estimate',
+					'posts_per_page' => 0
+				);
+			}
+			else {
+				$args = array(
+					'post_type' => 'sa_estimate',
+					'posts_per_page' => -1,
+					'public' => false,
+					'post_status' => array('temp','request','Pending','Scheduled','publish')
+				);
+			}
+
 			//Creating drop down item array.
 			$items = array();
 
 			//Adding initial blank value.
 			$items[] = array( 'text' => '', 'value' => '' );
-
-			$args = array(
-					'post_type' => 'sa_estimate',
-					'posts_per_page' => -1,
-					'public' => false,
-					'post_status' => array('temp','request','Pending','Scheduled','publish')
-			);
 
 			$posts = get_posts( $args );
 
@@ -305,6 +455,7 @@ function set_post_content( $post_id, $entry, $form ) {
 			'cc_users' => $entry[9],
 			'estimated_time' => $entry[10],
 			'associated_tasks' => $entry[11],
+			'parent_task' => $entry[18],
 			'description_of_associated_tasks' => $entry[12],
 			'add_line_item_to_invoice' => $entry[13],
 			'add_line_item_to_estimate' => $entry[14],

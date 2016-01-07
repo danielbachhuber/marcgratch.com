@@ -123,11 +123,16 @@
 
         self.updateTasks = function( tasks ){
             var tasks_select = $('select#input_5_11');
+            var tasks_select2 = $('select#input_5_18');
             tasks_select.empty();
+            tasks_select2.empty();
+            $( '<option value="">-- No Primary Task --</option>').appendTo(tasks_select2);
             $.each( tasks, function(){
                 $( '<option value="'+this.task_id+'">'+this.task_title+'</option>').appendTo(tasks_select);
+                $( '<option value="'+this.task_id+'">'+this.task_title+'</option>').appendTo(tasks_select2);
             });
             $("#input_5_11").trigger("chosen:updated")
+            $("#input_5_18").trigger("chosen:updated")
         };
 
         self.updateEstimates = function( estimates ){
