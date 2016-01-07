@@ -516,6 +516,9 @@ function set_post_content( $post_id, $entry, $form ) {
 
 	$pod = pods('mg_task',$post_id);
 	apply_filters('pods_api_pre_save_pod_item', $pod->save($data));
+	if (isset($entry[18]) && check_for_value($entry[18]) === true){
+		wp_update_post(array('ID' => $post_id, 'post_parent'=> $entry[18]));
+	}
 
 
 }
@@ -789,6 +792,17 @@ function add_line_items_on_task_save($pieces, $is_new_item, $id ) {
 						}
 					}
 				}
+			}
+		}
+		if (isset($pieces['changed_fields']['parent_task'])){
+			if ($pieces['changed_fields']['parent_task'] === ""){
+				$parent_task = '0';
+			}
+			else {
+				$parent_task = $pieces['changed_fields']['parent_task'];
+			}
+			if ($parent_task !== $id && is_numeric($parent_task)){
+				wp_update_post(array('ID' => $id, 'post_parent'=> $parent_task));
 			}
 		}
 	}
@@ -1308,6 +1322,9 @@ function invoice_or_estimate_update( $est_to_add, $est_to_remove, $inv_to_add, $
 						if (!is_array($current_estimates)){
 							$current_estimates = explode(",",$current_estimates);
 						}
+						if (!is_array($changed_fields['add_line_item_to_estimate'])){
+							$changed_fields['add_line_item_to_estimate'] = explode(",",$changed_fields['add_line_item_to_estimate']);
+						}
 						$est_to_remove = array_diff($current_estimates,$changed_fields['add_line_item_to_estimate']);
 					}
 				}
@@ -1329,6 +1346,9 @@ function invoice_or_estimate_update( $est_to_add, $est_to_remove, $inv_to_add, $
 					else {
 						if (!is_array($current_invoices)){
 							$current_invoices = explode(",",$current_invoices);
+						}
+						if (!is_array($changed_fields['add_line_item_to_invoice'])){
+							$changed_fields['add_line_item_to_invoice'] = explode(",",$changed_fields['add_line_item_to_invoice']);
 						}
 						$inv_to_remove = array_diff($current_invoices,$changed_fields['add_line_item_to_invoice']);
 					}

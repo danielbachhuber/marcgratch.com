@@ -160,6 +160,7 @@ function manage_wp_posts_be_qe_manage_sortable_columns( $sortable_columns ) {
  * Note that we are wrapping our post meta in a div with an id of �release_date-� plus the post id.
  * This will come in handy when we are populating our �Quick Edit� row.
  */
+add_action( 'manage_pages_custom_column', 'manage_wp_posts_be_qe_manage_posts_custom_column', 10, 2 );
 add_action( 'manage_posts_custom_column', 'manage_wp_posts_be_qe_manage_posts_custom_column', 10, 2 );
 function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_id ) {
 
@@ -1215,7 +1216,6 @@ function posts_filter_act_events($query) {
 
 	global $pagenow;
 
-	$qv = &$query->query_vars;//grab a reference to manipulate directly
 	if( $pagenow=='edit.php' &&
 			isset($_GET['post_type']) && 'mg_task'==$_GET['post_type'])
 	{
@@ -1225,6 +1225,7 @@ function posts_filter_act_events($query) {
         */
 		if(!empty($_GET['project']))
 		{
+            $qv = &$query->query_vars;//grab a reference to manipulate directly
 			$qv['meta_query'][] = array(
 					'field' => 'project',
 					'value' => $_GET['project'],
