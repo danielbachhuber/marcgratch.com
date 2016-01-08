@@ -1489,3 +1489,44 @@ function si_format_values($value, $column_slug, $item_data){
 }
 
 add_filter( 'si_format_front_end_line_item_value', 'si_format_values', 10, 3 );
+
+function mg_register_post_statuses() {
+	$statuses = array(
+		'pending' => __( 'Pending', 'sprout-invoices' ),
+		'in-progress' => __( 'In Progress', 'sprout-invoices' ),
+		'testing' => __( 'Testing', 'sprout-invoices' ),
+		'complete' => __( 'Complete', 'sprout-invoices' )
+	);
+	foreach ( $statuses as $status => $label ) {
+		register_post_status( $status, array(
+			'label' => $label,
+			'public' => true,
+			'exclude_from_search' => false,
+			'show_in_admin_all_list' => true,
+			'show_in_admin_status_list' => true,
+			'label_count' => _n_noop( $label . ' <span class="count">(%s)</span>', $label . ' <span class="count">(%s)</span>' )
+		));
+	}
+}
+add_action( 'init', 'mg_register_post_statuses' );
+
+function mg_display_status_label( $statuses ) {
+	global $post; // we need it to check current post status
+	if( get_query_var( 'post_status' ) != 'featured' ){ // not for pages with all posts of this status
+		if( $post->post_status == 'pending' ){ // если статус поста - Архив
+			return array('Pending'); // returning our status label
+		}
+		elseif( $post->post_status == 'in-progress' ){ // если статус поста - Архив
+			return array('In Progress'); // returning our status label
+		}
+		elseif( $post->post_status == 'testing' ){ // если статус поста - Архив
+			return array('Testing'); // returning our status label
+		}
+		elseif( $post->post_status == 'complete' ){ // если статус поста - Архив
+			return array('Complete'); // returning our status label
+		}
+	}
+	return $statuses; // returning the array with default statuses
+}
+
+add_filter( 'display_post_states', 'mg_display_status_label' );

@@ -88,6 +88,7 @@ function manage_wp_posts_be_qe_manage_posts_columns( $columns, $post_type ) {
 				 * follow immediately with our custom columns.
 				 */
 				if ( $key == 'title' ) {
+					$new_columns[ 'status' ] = 'Status';
 					$new_columns[ 'issue_type' ] = 'Issue Type';
 					$new_columns[ 'priority' ] = 'Priority';
 					$new_columns[ 'estimated_time' ] = 'Estimated Time';
@@ -138,6 +139,7 @@ function manage_wp_posts_be_qe_manage_sortable_columns( $sortable_columns ) {
 	 * When the column is clicked, the URL will look like this:
 	 * http://mywebsite.com/wp-admin/edit.php?post_type=movies&orderby=release_date&order=asc
 	 */
+	$sortable_columns[ 'status' ] = 'status';
 	$sortable_columns[ 'issue_type' ] = 'issue_type';
 	$sortable_columns[ 'priority' ] = 'priority';
 	$sortable_columns[ 'estimated_time' ] = 'estimated_time';
@@ -166,6 +168,35 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 
 	switch( $column_name ) {
 	
+		case 'status':
+
+			$status = get_post_status($post_id);
+            $statuses = array(
+                'pending' => __( 'Pending', 'sprout-invoices' ),
+                'in-progress' => __( 'In Progress', 'sprout-invoices' ),
+                'testing' => __( 'Testing', 'sprout-invoices' ),
+                'complete' => __( 'Complete', 'sprout-invoices' )
+            );
+
+            $field = "<select name=\"status\" data-name-clean=\"status\" data-label=\"Status\" >";
+            $field .= "<option value=\"\">-- Select One --</option>";
+
+            foreach ($statuses as $slug => $label){
+                if ($slug === $status){
+                    $field .= "<option value=\"$slug\" selected>$label</option>";
+                }
+                else{
+                    $field .= "<option value=\"$slug\">$label</option>";
+                }
+            }
+
+            $field .= "</select>";
+
+            ?>
+
+			<?php echo '<div id="status-' . $post_id . '" class="value">' .$field. '</div>';
+			break;
+
 		case 'issue_type':
 
 			$issue_type = get_post_meta( $post_id, 'issue_type', true );
@@ -175,7 +206,7 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 
 			echo '<div id="issue_type-' . $post_id . '" class="value">' .$pod_field. '</div>';
 			break;
-			
+
 		case 'priority':
 
 			$priority = get_post_meta( $post_id, 'priority', true );
@@ -1083,6 +1114,7 @@ function inline_edit_mg_task_meta() {
 
 	$response = false;
 	$new_data = '';
+	$r = array();
 
 	// we need the post IDs
 	$post_id = ( isset( $_POST[ 'post_ID' ] ) && !empty( $_POST[ 'post_ID' ] ) ) ? $_POST[ 'post_ID' ] : NULL;
@@ -1098,46 +1130,59 @@ function inline_edit_mg_task_meta() {
                 'estimates' => array()
             );
 
+            if ($field === 'status'){
+                $field = 'task_status';
+            }
+
 			// if it has a value, doesn't update if empty on bulk
 			if ( isset( $_POST[ $field ] ) && !empty( $_POST[ $field ] ) ) {
 
-				// update for each post ID
+			    if ($field === 'task_status'){
+                    $update_post = wp_update_post(array('ID' => $post_id, 'post_status'=> $_POST[ $field ]));
+
+                    if (is_numeric($update_post) && intval($update_post) > 0){
+                        $new_data = $_POST[ $field ];
+                    }
+                    else {
+                        $new_data = false;
+                    }
+			    }
+			    else{
+
 					$old_value = get_post_meta($post_id, $field, true);
 					$response = update_post_meta( $post_id, $field, $_POST[ $field ], $old_value );
 					$new_data = get_post_meta($post_id, $field, true);
 
-				if ($field === 'estimated_time' && $response === true){
+                    if ($field === 'estimated_time' && $response === true){
 
-                        if (isset($_SESSION['changed_docs']['invoices']) && check_for_value($_SESSION['changed_docs']['invoices'])){
-                            foreach ($_SESSION['changed_docs']['invoices'] as $item){
-                                $item_id = maybe_get_pod_id($item);
-                                $object = SI_Invoice::get_instance($item_id[0]);
-                                if (isset($object) && is_object($object)){
-                                    $object->set_calculated_total();
+                            if (isset($_SESSION['changed_docs']['invoices']) && check_for_value($_SESSION['changed_docs']['invoices'])){
+                                foreach ($_SESSION['changed_docs']['invoices'] as $item){
+                                    $item_id = maybe_get_pod_id($item);
+                                    $object = SI_Invoice::get_instance($item_id[0]);
+                                    if (isset($object) && is_object($object)){
+                                        $object->set_calculated_total();
+                                    }
                                 }
                             }
-                        }
-                        if (isset($_SESSION['changed_docs']['estimates']) && check_for_value($_SESSION['changed_docs']['estimates'])){
-                            foreach ($_SESSION['changed_docs']['estimates'] as $item){
-                                $item_id = maybe_get_pod_id($item);
-                                $object = SI_Estimate::get_instance($item_id[0]);
-                                if (isset($object) && is_object($object)){
-                                    $object->set_calculated_total();
+                            if (isset($_SESSION['changed_docs']['estimates']) && check_for_value($_SESSION['changed_docs']['estimates'])){
+                                foreach ($_SESSION['changed_docs']['estimates'] as $item){
+                                    $item_id = maybe_get_pod_id($item);
+                                    $object = SI_Estimate::get_instance($item_id[0]);
+                                    if (isset($object) && is_object($object)){
+                                        $object->set_calculated_total();
+                                    }
                                 }
                             }
+
+                        if (!is_numeric($new_data)){
+                            $new_data = convert_estimated_time_to_minutes($new_data);
                         }
-
-					if (!is_numeric($new_data)){
-						$new_data = convert_estimated_time_to_minutes($new_data);
-					}
-
-					$r = array(
-							'post_id' => (int)$post_id,
-							$field => $new_data
-					);
-					$response = json_encode($r, JSON_FORCE_OBJECT);
-				}
-
+                    }
+			    }
+                $r = array(
+                        'post_id' => (int)$post_id,
+                        $field => $new_data
+                );
 			}
 		}
 		elseif ($_POST['referrer'] == 'quick_save'){
@@ -1146,10 +1191,10 @@ function inline_edit_mg_task_meta() {
 					'post_id' => (int)$post_id,
 					'estimated_time' => (int)$new_data
 			);
-			$response = json_encode($r, JSON_FORCE_OBJECT);
 		}
         unset($_SESSION['changed_docs']);
 	}
+    $response = json_encode($r, JSON_FORCE_OBJECT);
 	exit($response);
 }
 

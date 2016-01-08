@@ -1,5 +1,44 @@
+th#priority {
+    width: 12em;
+}
+th#issue_type {
+    width: 12em;
+}
+th#estimated_time {
+    width: 12em;
+}
+th#project {
+    width: 12em;
+}
+th#status {
+    width: 12em;
+}
 td span.save-options {
     display: none;
+}
+
+tr.status-pending {
+    background: #f2dede !important;;
+}
+
+tr.status-in-progress {
+    background: #fcf8e3 !important;;
+}
+
+tr.status-testing {
+    background: #d9edf7 !important;;
+}
+
+tr.status-complete {
+    background: #dff0d8 !important;
+}
+
+td.estimated_time .value input[name="estimated_time"] {
+    width: 60%;
+}
+
+td.estimated_time .value span.save-options .dashicons {
+    padding-top: 5px;
 }
 
 .inline-edit-row fieldset label span.title {

@@ -172,6 +172,7 @@
 		var $project = $( '#project-' + id).find(":selected").text();
 		var $priority = $( '#priority-' + id).find(":selected").text();
 		var $estimated_time = $( '#estimated_time-' + id).find('input[name="estimated_time"]').val();
+		var $status = $( '#status-' + id ).find(":selected").val();
 
 		$( 'table.widefat .spinner' ).addClass( 'is-active' );
 
@@ -185,6 +186,7 @@
 			priority: $priority,
 			project: $project,
 			estimated_time: $estimated_time,
+			task_status: $status,
 			referrer: referrer
 		};
 
@@ -209,6 +211,21 @@
 						currentField.text(hours).fadeIn('slow');
 						currentField.next('input').val(hours);
 					});
+				}
+				else if ( response !== 1 && 'undefined' !== typeof response.task_status ){
+					var currentRow =  $('tr#post-'+ response.post_id);
+					var currentRowClasses =  currentRow.attr('class');
+					var currentRowClassesArray = currentRowClasses.split(' ');
+					var currentInput = $(currentRow).find("select[name='status']");
+					$.each(currentRowClassesArray, function(){
+						if (this.indexOf('status-') > -1){
+							$(currentRow).removeClass(this.valueOf());
+							$(currentRow).addClass('status-'+response.task_status);
+						}
+					});
+					currentInput.attr('disabled',false);
+					$(currentRow).find("span.post-state").text($(currentInput).find(":selected").text());
+
 				}
 			})
 			.fail(function(response){
@@ -325,6 +342,11 @@
 		return inlineEditPost.save(this, $(e.target).attr('data-name-clean'));
 	});
 
+	$($the_list).on( 'change', '.iedit select[name="status"]', function( e, id ) {
+		$(this).attr('disabled','disabled');
+		return inlineEditPost.save(this, $(e.target).attr('data-name-clean'));
+	});
+
 	$($the_list).on('click', 'td.estimated_time span.editable', function(evt){
 		var elem = $(this);
 		var oldElem = $("td.active").not(elem);
@@ -416,5 +438,26 @@
 		});
 	});
 
+	var statusi = [
+		{
+			label: 'Pending',
+			slug:	'pending'
+		},
+		{
+			label: 'In Progress',
+			slug:	'in-progress'
+		},
+		{
+			label: 'Testing',
+			slug:	'testing'
+		},
+		{
+			label: 'Complete',
+			slug:	'complete'
+		}
+	];
 
+	$.each(statusi, function(){
+		$( 'select[name=\"_status\"]' ).append( '<option value="'+this.slug+'">'+this.label+'</option>' );
+	});
 })(jQuery);
