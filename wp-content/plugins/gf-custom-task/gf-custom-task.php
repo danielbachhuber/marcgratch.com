@@ -200,7 +200,7 @@ function populate_pods_dropdown( $form ) {
 				$args = array(
 					'post_type' => 'mg_task',
 					'posts_per_page' => -1,
-					'post_status' => array('complete','in-progress','pending','publish','published'),
+					'post_status' => array('complete','in-progress','not-started','publish','published'),
 					'meta_key'	=> 'project',
 					'meta_value'	=> $project_id
 				);
@@ -209,7 +209,7 @@ function populate_pods_dropdown( $form ) {
 				$args = array(
 					'post_type' => 'mg_task',
 					'posts_per_page' => -1,
-					'post_status' => array('complete','in-progress','pending','publish','published'),
+					'post_status' => array('complete','in-progress','not-started','publish','published'),
 				);
 			}
 
@@ -242,7 +242,7 @@ function populate_pods_dropdown( $form ) {
 				$args = array(
 					'post_type' => 'mg_task',
 					'posts_per_page' => -1,
-					'post_status' => array('complete','in-progress','pending','publish','published'),
+					'post_status' => array('complete','in-progress','not-started','publish','published'),
 					'meta_key'	=> 'project',
 					'meta_value'	=> $project_id
 				);
@@ -251,7 +251,7 @@ function populate_pods_dropdown( $form ) {
 				$args = array(
 					'post_type' => 'mg_task',
 					'posts_per_page' => -1,
-					'post_status' => array('complete','in-progress','pending','publish','published'),
+					'post_status' => array('complete','in-progress','not-started','publish','published'),
 				);
 			}
 
@@ -1492,7 +1492,7 @@ add_filter( 'si_format_front_end_line_item_value', 'si_format_values', 10, 3 );
 
 function mg_register_post_statuses() {
 	$statuses = array(
-		'pending' => __( 'Pending', 'sprout-invoices' ),
+		'not-started' => __( 'Pending', 'sprout-invoices' ),
 		'in-progress' => __( 'In Progress', 'sprout-invoices' ),
 		'testing' => __( 'Testing', 'sprout-invoices' ),
 		'complete' => __( 'Complete', 'sprout-invoices' )
@@ -1512,8 +1512,9 @@ add_action( 'init', 'mg_register_post_statuses' );
 
 function mg_display_status_label( $statuses ) {
 	global $post; // we need it to check current post status
-	if( get_query_var( 'post_status' ) != 'featured' ){ // not for pages with all posts of this status
-		if( $post->post_status == 'pending' ){ // если статус поста - Архив
+	$custom_status = array('not-started','in-progress','testing','complete');
+	if( !in_array(get_query_var( 'post_status' ),$custom_status)){ // not for pages with all posts of this status
+		if( $post->post_status == 'not-started' ){ // если статус поста - Архив
 			return array('Pending'); // returning our status label
 		}
 		elseif( $post->post_status == 'in-progress' ){ // если статус поста - Архив
@@ -1533,7 +1534,7 @@ add_filter( 'display_post_states', 'mg_display_status_label' );
 
 add_filter( 'gform_post_status_options', 'mg_add_custom_post_status' );
 function mg_add_custom_post_status( $post_status_options ) {
-	$post_status_options['pending'] = 'Pending';
+	$post_status_options['not-started'] = 'Pending';
 	$post_status_options['in-progress'] = 'In Progress';
 	$post_status_options['testing'] = 'Testing';
 	$post_status_options['complete'] = 'Complete';

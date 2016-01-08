@@ -169,7 +169,7 @@
 		}
 
 		var $issue_type = $( '#issue_type-' + id ).find(":selected").text();
-		var $project = $( '#project-' + id).find(":selected").text();
+		var $project = $( '#project-' + $post_id).attr("data-project-id");
 		var $priority = $( '#priority-' + id).find(":selected").text();
 		var $estimated_time = $( '#estimated_time-' + id).find('input[name="estimated_time"]').val();
 		var $status = $( '#status-' + id ).find(":selected").val();
@@ -445,7 +445,7 @@
 	var statusi = [
 		{
 			label: 'Pending',
-			slug:	'pending'
+			slug:	'not-started'
 		},
 		{
 			label: 'In Progress',

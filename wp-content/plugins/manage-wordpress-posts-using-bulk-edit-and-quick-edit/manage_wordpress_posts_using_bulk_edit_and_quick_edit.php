@@ -172,7 +172,7 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 
 			$status = get_post_status($post_id);
             $statuses = array(
-                'pending' => __( 'Pending', 'sprout-invoices' ),
+                'not-started' => __( 'Pending', 'sprout-invoices' ),
                 'in-progress' => __( 'In Progress', 'sprout-invoices' ),
                 'testing' => __( 'Testing', 'sprout-invoices' ),
                 'complete' => __( 'Complete', 'sprout-invoices' )
@@ -655,7 +655,10 @@ function manage_wp_posts_be_qe_save_post( $post_id, $post ) {
 	// don't save for autosave
 	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE )
 		return $post_id;
-		
+
+    if (isset($_SESSION['doing_inline_edit']) && $_SESSION['doing_inline_edit'] == true)
+        return $post_id;
+
 	// dont save for revisions
 	if ( isset( $post->post_type ) && $post->post_type == 'revision' )
 		return $post_id;
@@ -1116,6 +1119,8 @@ function inline_edit_mg_task_meta() {
 	$new_data = '';
 	$r = array();
 
+	$_SESSION['doing_inline_edit'] = true;
+
 	// we need the post IDs
 	$post_id = ( isset( $_POST[ 'post_ID' ] ) && !empty( $_POST[ 'post_ID' ] ) ) ? $_POST[ 'post_ID' ] : NULL;
 
@@ -1194,6 +1199,7 @@ function inline_edit_mg_task_meta() {
 		}
         unset($_SESSION['changed_docs']);
 	}
+	unset($_SESSION['doing_inline_edit']);
     $response = json_encode($r, JSON_FORCE_OBJECT);
 	exit($response);
 }
