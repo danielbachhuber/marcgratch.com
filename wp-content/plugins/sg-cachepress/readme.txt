@@ -55,6 +55,11 @@ This field allows you to exclude URLs from the cache. This means that if you nee
 
 == Changelog ==
 
+= Version 2.3.3 =
+* Improved Memcache work
+* Interface improvements
+* Bug fixes
+
 = Version 2.3.2 =
 * Fixed bug with Memcached cache purge
 

@@ -109,7 +109,6 @@ class SG_CachePress_Supercacher {
 
 		$cache_server_socket = fsockopen( $hostname, 80, $errno, $errstr, 2 );
 		if( ! $cache_server_socket ) {
-			$sg_cachepress_supercacher->SGCP_Notify( 'Connection to cache server failed!' );
 			return;
 		}
 

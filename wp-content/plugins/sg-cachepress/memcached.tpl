@@ -12,10 +12,6 @@ Install this file to wp-content/object-cache.php
 if ( class_exists( 'Memcached' ) )
 {
 
-if ( !defined( 'WP_CACHE_KEY_SALT' ) ) {
-	define( 'WP_CACHE_KEY_SALT', '' );
-}
-
 function wp_cache_add( $key, $data, $group = '', $expire = 0 ) {
 	global $wp_object_cache;
 
@@ -301,7 +297,7 @@ class WP_Object_Cache {
 		else
 			$prefix = $this->blog_prefix;
 
-		return preg_replace( '/\s+/', '', WP_CACHE_KEY_SALT . "$prefix$group:$key" );
+		return preg_replace( '/\s+/', '', substr(md5(dirname(__FILE__)),7) . "$prefix$group:$key" );
 	}
 
 	function replace( $id, $data, $group = 'default', $expire = 0 ) {

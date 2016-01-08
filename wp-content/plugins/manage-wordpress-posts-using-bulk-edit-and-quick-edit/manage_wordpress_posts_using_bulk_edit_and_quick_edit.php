@@ -166,6 +166,12 @@ add_action( 'manage_pages_custom_column', 'manage_wp_posts_be_qe_manage_posts_cu
 add_action( 'manage_posts_custom_column', 'manage_wp_posts_be_qe_manage_posts_custom_column', 10, 2 );
 function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_id ) {
 
+    global $typenow;
+
+    if ($typenow !== 'mg_task'){
+        return;
+    }
+
 	switch( $column_name ) {
 	
 		case 'status':
