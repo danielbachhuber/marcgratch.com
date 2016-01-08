@@ -200,7 +200,7 @@ function populate_pods_dropdown( $form ) {
 				$args = array(
 					'post_type' => 'mg_task',
 					'posts_per_page' => -1,
-					'post_status' => 'published',
+					'post_status' => array('complete','in-progress','pending','publish','published'),
 					'meta_key'	=> 'project',
 					'meta_value'	=> $project_id
 				);
@@ -209,7 +209,7 @@ function populate_pods_dropdown( $form ) {
 				$args = array(
 					'post_type' => 'mg_task',
 					'posts_per_page' => -1,
-					'post_status' => 'published'
+					'post_status' => array('complete','in-progress','pending','publish','published'),
 				);
 			}
 
@@ -242,7 +242,7 @@ function populate_pods_dropdown( $form ) {
 				$args = array(
 					'post_type' => 'mg_task',
 					'posts_per_page' => -1,
-					'post_status' => 'published',
+					'post_status' => array('complete','in-progress','pending','publish','published'),
 					'meta_key'	=> 'project',
 					'meta_value'	=> $project_id
 				);
@@ -251,7 +251,7 @@ function populate_pods_dropdown( $form ) {
 				$args = array(
 					'post_type' => 'mg_task',
 					'posts_per_page' => -1,
-					'post_status' => 'published'
+					'post_status' => array('complete','in-progress','pending','publish','published'),
 				);
 			}
 
@@ -1530,3 +1530,13 @@ function mg_display_status_label( $statuses ) {
 }
 
 add_filter( 'display_post_states', 'mg_display_status_label' );
+
+add_filter( 'gform_post_status_options', 'mg_add_custom_post_status' );
+function mg_add_custom_post_status( $post_status_options ) {
+	$post_status_options['pending'] = 'Pending';
+	$post_status_options['in-progress'] = 'In Progress';
+	$post_status_options['testing'] = 'Testing';
+	$post_status_options['complete'] = 'Complete';
+	return $post_status_options;
+}
+
