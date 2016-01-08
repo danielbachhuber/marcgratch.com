@@ -7,7 +7,7 @@
 
         $("#input_5_2").chosen().on('change',function( clickedProject ){
 
-            if ( $(clickedProject.target).val() == '-- select a Project --'){
+            if ( $(clickedProject.target).val() == '-1'){
                 return false;
             }
 
@@ -75,7 +75,11 @@
         });
 
         self.getProjectID = function( clickedProject ){
-            return $(clickedProject.target).val();
+           if ( 'undefined' !== typeof clickedProject.target ){
+               return $(clickedProject.target).val();
+           } else {
+               return $(clickedProject).val();
+           }
         };
 
         self.assigneeID = function( clickedAssignee ){
@@ -113,8 +117,7 @@
 
         self.removeAssignee = function( assigneedID ){
             var assignee_select = $('select#input_5_9');
-
-            if (removed_assignee !== '' || removed_assignee !== 'undefined'){
+            if (removed_assignee !== '' || 'undefined' !== typeof removed_assignee){
                 $(assignee_select).append(removed_assignee);
             }
             removed_assignee = $( assignee_select ).find("option[value='"+assigneedID+"']").remove();
@@ -158,8 +161,23 @@
                 $('#input_5_17').val('100');
             }
         };
+        if ($("#input_5_2").val() !== '-1'){
+            var id = self.getProjectID( $("#input_5_2") );
+            self.requestProjectData( id );
 
+            $.when( self.response ).done(function( response ){
+                console.log(self.response);
+                self.response = JSON.parse(response);
+                self.updateAssignees(self.response.clients);
+                self.updateCCusers(self.response.clients);
+                self.updateTasks( self.response.tasks );
+                self.updateEstimates( self.response.estimates )
+                self.updateInvoices( self.response.invoices )
+            });
+            $.when( self.response ).fail( function( response ){
+                console.log('failed: ' + response);
+            });
+        }
     });
-
 } )( jQuery );
 

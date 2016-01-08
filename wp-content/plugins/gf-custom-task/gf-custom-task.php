@@ -599,7 +599,7 @@ function process_ajax_on_project_change(){
 		'post_type'		=> 'mg_task',
 		'meta_key'   	=> 'project',
 		'meta_value'	=> $post_id,
-		'post_status'	=> 'publish'
+		'post_status' => array('complete','in-progress','not-started','publish','published'),
 	);
 
 	$the_query = new WP_Query( $args );
