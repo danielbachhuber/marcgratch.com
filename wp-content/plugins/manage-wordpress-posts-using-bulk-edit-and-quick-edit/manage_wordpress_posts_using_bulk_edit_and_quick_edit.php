@@ -665,6 +665,10 @@ function manage_wp_posts_be_qe_save_post( $post_id, $post ) {
     if (isset($_SESSION['doing_inline_edit']) && $_SESSION['doing_inline_edit'] == true)
         return $post_id;
 
+
+    if (isset($_POST['action']) && $_POST['action'] == 'simple_page_ordering')
+        return $post_id;
+
 	// dont save for revisions
 	if ( isset( $post->post_type ) && $post->post_type == 'revision' )
 		return $post_id;
