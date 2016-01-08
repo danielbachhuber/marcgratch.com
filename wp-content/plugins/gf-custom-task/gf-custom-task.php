@@ -645,12 +645,16 @@ function filter_pods_api_get_table_info_default_post_status( $array, $post_type,
 		return $array;
 	}
 	else {
-		if(isset($field['name']) && ($field['name'] == 'add_line_item_to_invoice' || $field['name'] == 'add_line_item_to_estimate')) {
+		if(isset($field['name']) && ($field['name'] == 'add_line_item_to_invoice' || $field['name'] == 'add_line_item_to_estimate' || $field['name'] == 'parent_task' || $field['name'] == 'associated_tasks')) {
 			$array[] = 'temp';
 			$array[] = 'request';
 			$array[] = 'Pending';
 			$array[] = 'Scheduled';
 			$array[] = 'publish';
+			$array[] = 'not-started';
+			$array[] = 'in-progress';
+			$array[] = 'testing';
+			$array[] = 'complete';
 		}
 	}
 
