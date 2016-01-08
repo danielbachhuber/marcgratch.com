@@ -17,7 +17,7 @@ td span.save-options {
     display: none;
 }
 
-tr.status-pending {
+tr.status-not-started {
     background: #f2dede !important;;
 }
 
