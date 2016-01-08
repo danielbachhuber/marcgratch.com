@@ -343,8 +343,12 @@
 	});
 
 	$($the_list).on( 'change', '.iedit select[name="status"]', function( e, id ) {
-		$(this).attr('disabled','disabled');
-		return inlineEditPost.save(this, $(e.target).attr('data-name-clean'));
+		var clickedOpt = $(e.target);
+
+		if (clickedOpt.val() !== ""){
+			$(this).attr('disabled','disabled');
+			return inlineEditPost.save(this, $(e.target).attr('data-name-clean'));
+		}
 	});
 
 	$($the_list).on('click', 'td.estimated_time span.editable', function(evt){
