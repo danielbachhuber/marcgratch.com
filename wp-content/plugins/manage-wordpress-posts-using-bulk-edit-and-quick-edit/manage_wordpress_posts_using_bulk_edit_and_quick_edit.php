@@ -88,7 +88,7 @@ function manage_wp_posts_be_qe_manage_posts_columns( $columns, $post_type ) {
 				 * follow immediately with our custom columns.
 				 */
 				if ( $key == 'title' ) {
-					$new_columns[ 'status' ] = 'Status';
+					$new_columns[ 'mg_status' ] = 'Status';
 					$new_columns[ 'issue_type' ] = 'Issue Type';
 					$new_columns[ 'priority' ] = 'Priority';
 					$new_columns[ 'estimated_time' ] = 'Estimated Time';
@@ -139,7 +139,7 @@ function manage_wp_posts_be_qe_manage_sortable_columns( $sortable_columns ) {
 	 * When the column is clicked, the URL will look like this:
 	 * http://mywebsite.com/wp-admin/edit.php?post_type=movies&orderby=release_date&order=asc
 	 */
-	$sortable_columns[ 'status' ] = 'status';
+	$sortable_columns[ 'mg_status' ] = 'status';
 	$sortable_columns[ 'issue_type' ] = 'issue_type';
 	$sortable_columns[ 'priority' ] = 'priority';
 	$sortable_columns[ 'estimated_time' ] = 'estimated_time';
@@ -163,7 +163,6 @@ function manage_wp_posts_be_qe_manage_sortable_columns( $sortable_columns ) {
  * This will come in handy when we are populating our �Quick Edit� row.
  */
 add_action( 'manage_pages_custom_column', 'manage_wp_posts_be_qe_manage_posts_custom_column', 10, 2 );
-add_action( 'manage_posts_custom_column', 'manage_wp_posts_be_qe_manage_posts_custom_column', 10, 2 );
 function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_id ) {
 
     global $typenow;
@@ -174,7 +173,7 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 
 	switch( $column_name ) {
 	
-		case 'status':
+		case 'mg_status':
 
 			$status = get_post_status($post_id);
             $statuses = array(
@@ -629,6 +628,7 @@ function manage_wp_posts_be_qe_enqueue_admin_scripts() {
     global $typenow, $pagenow;
     if ($typenow === 'mg_task' && $pagenow === 'edit.php'){
         wp_enqueue_script( 'manage-wp-posts-using-bulk-quick-edit', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'bulk_quick_edit.js', array( 'jquery', 'inline-edit-post' ), '', true );
+        wp_enqueue_script( 'allow-inputs-simple-page-ordering', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'allow-inputs-simple-page-ordering.js', array( 'simple-page-ordering','manage-wp-posts-using-bulk-quick-edit' ), '', true );
     }
 }
 

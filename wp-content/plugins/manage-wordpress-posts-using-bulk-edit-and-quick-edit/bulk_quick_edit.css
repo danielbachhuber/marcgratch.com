@@ -71,3 +71,7 @@ fieldset.inline-edit-col-left {
     width: inherit;
     display: inline-block;
 }
+
+td.estimated_time .value span.save-options .dashicons:hover {
+    cursor: pointer;
+}
