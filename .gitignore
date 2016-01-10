@@ -9,6 +9,7 @@ Thumbs.db
 robots.txt
 web.config
 *.sql
+db.php
 
 # Godaddy Specific
 wp-admin/
