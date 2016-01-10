@@ -88,7 +88,7 @@ function manage_wp_posts_be_qe_manage_posts_columns( $columns, $post_type ) {
 				 * follow immediately with our custom columns.
 				 */
 				if ( $key == 'title' ) {
-					$new_columns[ 'status' ] = 'Status';
+					$new_columns[ 'mg_status' ] = 'Status';
 					$new_columns[ 'issue_type' ] = 'Issue Type';
 					$new_columns[ 'priority' ] = 'Priority';
 					$new_columns[ 'estimated_time' ] = 'Estimated Time';
@@ -139,7 +139,7 @@ function manage_wp_posts_be_qe_manage_sortable_columns( $sortable_columns ) {
 	 * When the column is clicked, the URL will look like this:
 	 * http://mywebsite.com/wp-admin/edit.php?post_type=movies&orderby=release_date&order=asc
 	 */
-	$sortable_columns[ 'status' ] = 'status';
+	$sortable_columns[ 'mg_status' ] = 'status';
 	$sortable_columns[ 'issue_type' ] = 'issue_type';
 	$sortable_columns[ 'priority' ] = 'priority';
 	$sortable_columns[ 'estimated_time' ] = 'estimated_time';
@@ -163,7 +163,6 @@ function manage_wp_posts_be_qe_manage_sortable_columns( $sortable_columns ) {
  * This will come in handy when we are populating our �Quick Edit� row.
  */
 add_action( 'manage_pages_custom_column', 'manage_wp_posts_be_qe_manage_posts_custom_column', 10, 2 );
-add_action( 'manage_posts_custom_column', 'manage_wp_posts_be_qe_manage_posts_custom_column', 10, 2 );
 function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_id ) {
 
     global $typenow;
@@ -174,7 +173,7 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 
 	switch( $column_name ) {
 	
-		case 'status':
+		case 'mg_status':
 
 			$status = get_post_status($post_id);
             $statuses = array(
@@ -206,7 +205,7 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 		case 'issue_type':
 
 			$issue_type = get_post_meta( $post_id, 'issue_type', true );
-			$pod = pods('mg_task',$z_id = null, true);
+			$pod = pods('mg_task');
 			$field = $pod->fields['issue_type'];
 			$pod_field = PodsForm::field("issue_type",$issue_type,'pick',$field,$pod,$pod->id());
 
@@ -216,7 +215,7 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 		case 'priority':
 
 			$priority = get_post_meta( $post_id, 'priority', true );
-			$pod = pods('mg_task',$z_id = null, true);
+			$pod = pods('mg_task');
 			$field = $pod->fields['priority'];
 			$pod_field = PodsForm::field("priority",$priority,'pick',$field,$pod,$pod->id());
 
@@ -226,7 +225,7 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
 		case 'estimated_time':
 
 			$estimated_time = get_post_meta( $post_id, 'estimated_time', true );
-			$pod = pods('mg_task',$z_id = null, true);
+			$pod = pods('mg_task');
 			$pod->fields['estimated_time']['type'] = 'hidden';
 			$field = $pod->fields['estimated_time'];
 
@@ -268,7 +267,7 @@ function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_i
                 }
             }
 
-			if ($project === false || empty($project)){
+			if (isset($project) && check_for_value($project) === false){
 				$project['ID'] = $post_id;
 				$project['post_title'] = 'No Associated<br>Project';
 			}
@@ -490,7 +489,7 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 				case 'issue_type':
 
 					$issue_type = get_post_meta( $post_id, 'issue_type', true );
-					$pod = pods('mg_task',$z_id = null, true);
+					$pod = pods('mg_task');
 					$field = $pod->fields['issue_type'];
 					$pod_field = PodsForm::field("issue_type",$issue_type,'pick',$field,$pod,$pod->id()); ?>
 
@@ -504,11 +503,11 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 							</label>
                     <?php
                     break;
-					
+
 				case 'priority':
 
 					$priority = get_post_meta( $post_id, 'priority', true );
-					$pod = pods('mg_task',$z_id = null, true);
+					$pod = pods('mg_task');
 					$field = $pod->fields['priority'];
 					$pod_field = PodsForm::field("priority",$priority,'pick',$field,$pod,$pod->id()); ?>
 
@@ -525,7 +524,7 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
 				case 'estimated_time':
 
 					$estimated_time = get_post_meta( $post_id, 'estimated_time', true );
-					$pod = pods('mg_task',$z_id = null, true);
+					$pod = pods('mg_task');
 					$field = $pod->fields['estimated_time'];
 					$pod_field = PodsForm::field("estimated_time", $estimated_time,'text',$field,$pod,$pod->id()); ?>
 
@@ -626,13 +625,20 @@ function manage_wp_posts_be_qe_bulk_quick_edit_custom_box( $column_name, $post_t
  */
 add_action( 'admin_print_scripts-edit.php', 'manage_wp_posts_be_qe_enqueue_admin_scripts' );
 function manage_wp_posts_be_qe_enqueue_admin_scripts() {
-	wp_enqueue_script( 'manage-wp-posts-using-bulk-quick-edit', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'bulk_quick_edit.js', array( 'jquery', 'inline-edit-post' ), '', true );
+    global $typenow, $pagenow;
+    if ($typenow === 'mg_task' && $pagenow === 'edit.php'){
+        wp_enqueue_script( 'manage-wp-posts-using-bulk-quick-edit', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'bulk_quick_edit.js', array( 'jquery', 'inline-edit-post' ), '', true );
+        wp_enqueue_script( 'allow-inputs-simple-page-ordering', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'allow-inputs-simple-page-ordering.js', array( 'simple-page-ordering','manage-wp-posts-using-bulk-quick-edit' ), '', true );
+    }
 }
 
 add_action( 'admin_print_styles-edit.php', 'manage_wp_posts_be_qe_enqueue_admin_styles' );
 function manage_wp_posts_be_qe_enqueue_admin_styles() {
-	wp_register_style( 'manage-wp-posts-using-bulk-quick-edit-styles', plugins_url('bulk_quick_edit.css', __FILE__) );
-	wp_enqueue_style( 'manage-wp-posts-using-bulk-quick-edit-styles' );
+    global $typenow, $pagenow;
+    if ($typenow === 'mg_task' && $pagenow === 'edit.php'){
+        wp_register_style( 'manage-wp-posts-using-bulk-quick-edit-styles', plugins_url('bulk_quick_edit.css', __FILE__) );
+        wp_enqueue_style( 'manage-wp-posts-using-bulk-quick-edit-styles' );
+    }
 }
 
 /**
@@ -1129,14 +1135,13 @@ function inline_edit_mg_task_meta() {
 	$new_data = '';
 	$r = array();
 
-	$_SESSION['doing_inline_edit'] = true;
-
 	// we need the post IDs
 	$post_id = ( isset( $_POST[ 'post_ID' ] ) && !empty( $_POST[ 'post_ID' ] ) ) ? $_POST[ 'post_ID' ] : NULL;
 
 	// if we have post IDs
 	if ( ! empty( $post_id ) && is_numeric( $post_id ) ) {
 		if ( ! empty( $_POST['referrer'] ) && $_POST['referrer'] !== 'quick_save' ) {
+			$_SESSION['doing_inline_edit'] = true;
 
 			$field = str_replace('-','_',$_POST['referrer']);
 
@@ -1330,5 +1335,48 @@ function check_for_value( $input ){
     }
 }
 
+function process_ajax_get_tasks_per_project(){
+	$has_admin = array();
+	//@TODO ADD NONCE CHECK
+	$post_id = isset($_POST['post_id']) ? $_POST['post_id'] : 0;
+	$project_id = isset($_POST['project_id']) ? $_POST['project_id'] : 0;
+	if ($post_id <= 0 && $project_id <= 0){
+		return;
+	}
+
+	$asscoiativeTasks = array();
+
+
+	if ($project_id == 0){
+        $project_id = get_post_meta($post_id, 'project', true);
+        $project_id = maybe_get_pod_id($project_id);
+	}
+
+	$args = array(
+		'post_type'		=> 'mg_task',
+		'meta_key'   	=> 'project',
+		'meta_value'	=> $project_id,
+		'post_status' => array('complete','in-progress','not-started','publish','published'),
+	);
+
+	$the_query = new WP_Query( $args );
+	while ( $the_query->have_posts() ) {
+		$the_query->the_post();
+		$asscoiativeTasks[] = array(
+			'task_title' => get_the_title(),
+			'task_id'	 => get_the_ID()
+		);
+	}
+
+	$data = array(
+		'tasks'		=> $asscoiativeTasks
+	);
+
+
+	$output = json_encode($data);
+
+	exit($output);
+}
+add_action('wp_ajax_mg_bulk_quick_edit_get_tasks_per_project', 'process_ajax_get_tasks_per_project');
 
 ?>

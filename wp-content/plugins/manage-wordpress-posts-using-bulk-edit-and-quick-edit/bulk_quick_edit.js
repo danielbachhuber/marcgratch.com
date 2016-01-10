@@ -25,7 +25,7 @@
 
 			// define the edit row
 			var $edit_row = $( '#edit-' + $post_id );
-			
+
 			// get the issue type
 			var $issue_type = $( '#issue_type-' + $post_id ).find(":selected").text();
 			
@@ -196,7 +196,10 @@
 		// make ajax request
 		$.post( ajaxurl, params )
 			.done(function( r ) {
+				console.log(r);
 				var response = JSON.parse( r );
+				console.log("break");
+				console.log(response);
 				$('table.widefat .spinner').removeClass('is-active');
 				$('.ac_results').hide();
 				if (typeof response === 'undefined') {
@@ -441,6 +444,7 @@
 			$(this).prop("checked",false);
 		});
 	});
+
 
 	var statusi = [
 		{

@@ -370,7 +370,7 @@ function pods_modify_data_b4_submit($pieces, $is_new_item = null){
 	if (isset($pieces) && check_for_value($pieces) !== false){
 		$current_field = $pieces['fields_active'];
 		if (isset($pieces['params']) && check_for_value($pieces['params'])){
-			$post_id = maybe_get_pod_id($pieces['params']);
+			$post_id = intval(maybe_get_pod_id($pieces['params']));
 			$_SESSION['prev_inv'] = maybe_get_pod_id(get_post_meta($post_id,'add_line_item_to_invoice',false));
 			$_SESSION['prev_est'] = maybe_get_pod_id(get_post_meta($post_id,'add_line_item_to_estimate',false));
 		}
@@ -455,7 +455,6 @@ function set_post_content( $post_id, $entry, $form ) {
 			'cc_users' => $entry[9],
 			'estimated_time' => $entry[10],
 			'associated_tasks' => $entry[11],
-			'parent_task' => $entry[18],
 			'description_of_associated_tasks' => $entry[12],
 			'add_line_item_to_invoice' => $entry[13],
 			'add_line_item_to_estimate' => $entry[14],
@@ -645,7 +644,7 @@ function filter_pods_api_get_table_info_default_post_status( $array, $post_type,
 		return $array;
 	}
 	else {
-		if(isset($field['name']) && ($field['name'] == 'add_line_item_to_invoice' || $field['name'] == 'add_line_item_to_estimate' || $field['name'] == 'parent_task' || $field['name'] == 'associated_tasks')) {
+		if(isset($field['name']) && ($field['name'] == 'add_line_item_to_invoice' || $field['name'] == 'add_line_item_to_estimate' || $field['name'] == 'associated_tasks')) {
 			$array[] = 'temp';
 			$array[] = 'request';
 			$array[] = 'Pending';
@@ -796,17 +795,6 @@ function add_line_items_on_task_save($pieces, $is_new_item, $id ) {
 						}
 					}
 				}
-			}
-		}
-		if (isset($pieces['changed_fields']['parent_task'])){
-			if ($pieces['changed_fields']['parent_task'] === ""){
-				$parent_task = '0';
-			}
-			else {
-				$parent_task = $pieces['changed_fields']['parent_task'];
-			}
-			if ($parent_task !== $id && is_numeric($parent_task)){
-				wp_update_post(array('ID' => $id, 'post_parent'=> $parent_task));
 			}
 		}
 	}
