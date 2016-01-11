@@ -25,13 +25,43 @@
 
 			// define the edit row
 			var $edit_row = $( '#edit-' + $post_id );
+			var $parent_task = $( '#inline_' + $post_id ).find(".post_parent").text();
+
+			console.log($parent_task);
+
+			if (self.triggerProjectAjax === true){
+				console.log('no project in query string');
+				$edit_row.find( 'select[name="post_parent"]' ).prop('disabled',true);
+				var data = {
+					action: 'mg_bulk_quick_edit_get_tasks_per_project',
+					post_id: $post_id
+				};
+
+				self.response = $.post( ajaxurl, data );
+
+				$.when( self.response ).done(function( response ){
+					console.log(response);
+					self.response = JSON.parse(response);
+					console.log(self.response);
+					self.updateTasks( self.response.tasks, $edit_row );
+					$edit_row.find( 'select[name="post_parent"]' ).find( 'option[value="'+$parent_task+'"]').prop('selected',true);
+					$edit_row.find( 'select[name="post_parent"]' ).prop('disabled',false);
+				});
+				$.when( self.response ).fail( function( response ){
+					console.log('failed: ' + response);
+				});
+			} else {
+				console.log('there IS project in query string');
+				self.updateTasks( self.updatedTasks, $edit_row );
+				$edit_row.find( 'select[name="post_parent"]' ).find( 'option[value="'+$parent_task+'"]').prop('selected',true);
+			}
 
 			// get the issue type
 			var $issue_type = $( '#issue_type-' + $post_id ).find(":selected").text();
-			
+
 			// set the issue type
 			$edit_row.find( 'select[name="issue_type"]' ).find( 'option[value="'+$issue_type+'"]').prop('selected',true);
-			
+
 			// get the priority
 			var $priority = $( '#priority-' + $post_id).find(":selected").text();
 
@@ -196,10 +226,7 @@
 		// make ajax request
 		$.post( ajaxurl, params )
 			.done(function( r ) {
-				console.log(r);
 				var response = JSON.parse( r );
-				console.log("break");
-				console.log(response);
 				$('table.widefat .spinner').removeClass('is-active');
 				$('.ac_results').hide();
 				if (typeof response === 'undefined') {
@@ -247,7 +274,7 @@
 
 		// define the bulk edit row
 		var $bulk_row = $( '#bulk-edit' );
-		
+
 		// get the selected post ids that are being edited
 		var $post_ids = new Array();
 		$bulk_row.find( '#bulk-titles' ).children().each( function() {
@@ -338,7 +365,7 @@
 			cache: false,
 			data: data
 		});
-		
+
 	});
 
 	$($the_list).on( 'change', '.iedit select.pods-form-ui-field-type-pick', function( e, id ) {
@@ -444,6 +471,74 @@
 			$(this).prop("checked",false);
 		});
 	});
+
+	var url = window.location.toString();
+	var query_string = url.split("?");
+	var params = query_string[1].split("&");
+	var param_list = {};
+
+	$.each(params, function(){
+		var param_item = this.split("=");
+		if (param_item.indexOf("project") > -1 && 'undefined' !== typeof param_item[1] && 'project' === param_item[0]){
+			console.log(param_item);
+			param_list[param_item[0]] = param_item[1];
+		}
+	});
+
+	if ( $.isEmptyObject(param_list) === true ){
+		self.triggerProjectAjax = true;
+	}
+	else {
+		var data = {
+			action: 'mg_bulk_quick_edit_get_tasks_per_project',
+			project_id: param_list.project
+		};
+
+		self.response = $.post( ajaxurl, data );
+
+		$.when( self.response ).done(function( response ){
+			console.log(response);
+			self.response = JSON.parse(response);
+			console.log(self.response.tasks);
+			self.updatedTasks= self.response.tasks;
+		});
+		$.when( self.response ).fail( function( response ){
+			console.log('failed: ' + response);
+		});
+	}
+
+	self.updateTasks = function( tasks, context ){
+
+		tasks.push(0);
+
+		if ( context !== false ){
+			var tasks_select = context.find('select[name="post_parent"]');
+		}
+		else {
+			var tasks_select = $('select[name="post_parent"]');
+		}
+
+		console.log("fire");
+		var supplied_options = [];
+		var updated_options = [];
+		//tasks_select.empty();
+		//$( '<option value="0">-- No Primary Task --</option>').appendTo(tasks_select);
+		$.each( tasks_select.find("option") , function(){
+			supplied_options.push(parseInt($(this).val()));
+		});
+		console.log(supplied_options);
+		console.log('break');
+		console.log(this);
+		console.log('break');
+		console.log(tasks);
+		$.grep(supplied_options, function(el) {
+			console.log(el);
+			if ($.inArray(el, tasks) == -1){
+				console.log("fire again");
+				tasks_select.find("option[value='"+el+"']").remove();
+			}
+		});
+	};
 
 
 	var statusi = [
