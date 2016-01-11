@@ -20,8 +20,7 @@
     }).disableSelection();
 
 // enable text select on inputs
-    sort_container.find("input")
-        .bind('mousedown.ui-disableSelection selectstart.ui-disableSelection', function (e) {
+    sort_container.on('mousedown.ui-disableSelection selectstart.ui-disableSelection', 'input', function (e) {
             e.stopImmediatePropagation();
         });
     sort_container.find("input")
