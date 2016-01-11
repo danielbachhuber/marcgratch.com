@@ -165,12 +165,6 @@ function manage_wp_posts_be_qe_manage_sortable_columns( $sortable_columns ) {
 add_action( 'manage_pages_custom_column', 'manage_wp_posts_be_qe_manage_posts_custom_column', 10, 2 );
 function manage_wp_posts_be_qe_manage_posts_custom_column( $column_name, $post_id ) {
 
-    global $typenow;
-
-    if ($typenow !== 'mg_task'){
-        return;
-    }
-
 	switch( $column_name ) {
 	
 		case 'mg_status':
@@ -1356,16 +1350,14 @@ function process_ajax_get_tasks_per_project(){
 		'post_type'		=> 'mg_task',
 		'meta_key'   	=> 'project',
 		'meta_value'	=> $project_id,
-		'post_status' => array('complete','in-progress','not-started','publish','published'),
+		'post_status'   => array('complete','in-progress','not-started','publish','published'),
+		'posts_per_page' => -1
 	);
 
 	$the_query = new WP_Query( $args );
 	while ( $the_query->have_posts() ) {
 		$the_query->the_post();
-		$asscoiativeTasks[] = array(
-			'task_title' => get_the_title(),
-			'task_id'	 => get_the_ID()
-		);
+		$asscoiativeTasks[] = get_the_ID();
 	}
 
 	$data = array(
@@ -1378,5 +1370,19 @@ function process_ajax_get_tasks_per_project(){
 	exit($output);
 }
 add_action('wp_ajax_mg_bulk_quick_edit_get_tasks_per_project', 'process_ajax_get_tasks_per_project');
+
+/**
+ * Show all parents, regardless of post status.
+ *
+ * @param   array  $args  Original get_pages() $args.
+ *
+ * @return  array  $args  Args set to also include posts with pending, draft, and private status.
+ */
+function my_slug_show_all_parents( $args ) {
+	$args['post_status'] = array( 'publish', 'pending', 'draft', 'private','not-started','in-progress','testing','complete' );
+	return $args;
+}
+add_filter( 'page_attributes_dropdown_pages_args', 'my_slug_show_all_parents' );
+add_filter( 'quick_edit_dropdown_pages_args', 'my_slug_show_all_parents' );
 
 ?>
